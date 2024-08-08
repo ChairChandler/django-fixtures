@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser
 from django.core import validators
 import uuid
@@ -39,8 +40,7 @@ class AppUser(AbstractUser):
     email = models.EmailField(
         "email address",
         primary_key=True,
-        # https://www.lifewire.com/is-email-address-length-limited-1171110
-        max_length=320
+        max_length=64
     )
     telephone = models.OneToOneField(Telephone, on_delete=models.RESTRICT)
 
@@ -52,6 +52,9 @@ class AppUser(AbstractUser):
     first_name = None
     last_name = None
 
+    class InvalidEmail(ValueError):
+        pass
+
     # we cannot remove methods from base class, so we mark them
     def get_full_name(self):
         raise NotImplementedError('Method is forbidden')
@@ -59,11 +62,26 @@ class AppUser(AbstractUser):
     def get_short_name(self):
         raise NotImplementedError('Method is forbidden')
 
-    def create_password_and_send_email(self):
-        random_data = uuid.uuid4().hex
-        pwd = self.set_password(random_data)
-        self.email_user(
-            'Account created',
-            f'Password: {pwd}',
-            from_email=''
+    @staticmethod
+    def create_user(email: str, telephone: Telephone):
+        '''
+        Create hashed unique password and send email to the user with password.
+        '''
+        password = uuid.uuid4().hex
+        pwd_hashed = make_password(password)
+
+        user = AppUser.objects.create(
+            email=email,
+            telephone=telephone,
+            password=pwd_hashed
         )
+        is_email_sent = user.email_user(
+            'Account created',
+            f'Password: {password}',
+            from_email='test@mail.com',
+            fail_silently=False
+        )
+        if not is_email_sent:
+            user.delete()
+            msg = 'E-mail probably not exists - no password sent'
+            raise AppUser.InvalidEmail(msg)

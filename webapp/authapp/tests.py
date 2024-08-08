@@ -1,7 +1,9 @@
+from ast import Delete
 from django.test import TestCase
 from django.forms import ValidationError
 from django.db import transaction  # type: ignore
 from django.db.utils import IntegrityError
+from django.db.models import RestrictedError
 from django.contrib.auth import get_user_model
 import random
 import string
@@ -70,7 +72,7 @@ class TelephoneModelTest(TestCase):
 
 
 class AppUserModelTest(TestCase):
-    User = get_user_model()
+    User: models.AppUser = get_user_model()  # type: ignore
 
     def setUp(self) -> None:
         self.telephones = [
@@ -91,14 +93,15 @@ class AppUserModelTest(TestCase):
             'firstname+lastname@example.com',
             'email@123.123.123.123',
             'email@[123.123.123.123]',
-            '“email”@ example.com',
             '1234567890@example.com',
             'email@example-one.com',
             '_______@example.com',
             'email@example.name',
             'email@example.museum',
             'email@example.co.jp',
-            'firstname-lastname@example.com'
+            'firstname-lastname@example.com',
+            'email@example.web',
+            'email@111.222.333.44444'
         ]
 
         self.invalid_emails = [
@@ -115,11 +118,14 @@ class AppUserModelTest(TestCase):
             'email@example.com(Joe Smith)',
             'email@example',
             'email@-example.com',
-            'email@example.web',
-            'email@111.222.333.44444',
             'email@example..com',
-            'Abc..123@example.com'
+            'Abc..123@example.com',
+            '“email”@ example.com'
         ]
+
+    def tearDown(self) -> None:
+        self.User.objects.all().delete()
+        models.Telephone.objects.all().delete()
 
     def test_email_is_username(self):
         '''
@@ -156,7 +162,7 @@ class AppUserModelTest(TestCase):
                 password=self.password,
                 telephone=self.telephones[0]
             )
-            self.assertEqual(o.telephone, self.telephones[0])  # type: ignore
+            self.assertEqual(o.telephone, self.telephones[0])
 
     def test_email_is_unique(self):
         '''
@@ -188,25 +194,73 @@ class AppUserModelTest(TestCase):
         - @ part: 1 char
         - domainame part: 255 chars
         '''
-        pass
         # insert valid email format
+        for email in self.valid_emails:
+            o = self.User.objects.create(
+                email=email,
+                telephone=self.telephones[0],
+                password=self.password
+            )
+            o.full_clean()
+            # telephone must be unique - remove user
+            o.delete()
+
         # insert invalid email format
-        # insert invalid email with username part more than 64 chars
-        # insert invalid email with doubled @ char
-        # insert invalid email with domain name part more than 255 chars
+        for email in self.invalid_emails:
+            o = self.User.objects.create(
+                email=email,
+                telephone=self.telephones[0],
+                password=self.password
+            )
+            with self.assertRaises(ValidationError):
+                o.full_clean()
+
+            # we cannot remove object like above, because fields are empty
+            # so we have to find it in the database
+            self.User.objects.get(pk=email).delete()
+
+        # insert invalid long emails
+        long_mails = [
+            ('valid', 'a'*50 + '@a.com'),
+            ('valid', 'a'*58 + '@a.com'),
+            ('invalid', 'a'*65 + '@a.com'),
+            ('invalid', 'a@@a.com'),
+        ]
+        for mail_type, mail in long_mails:
+            o = self.User.objects.create(
+                email=mail,
+                telephone=self.telephones[0],
+                password=self.password
+            )
+            if mail_type == 'valid':
+                o.full_clean()
+            else:
+                with self.assertRaises(ValidationError):
+                    o.full_clean()
+
+            self.User.objects.get(pk=mail).delete()
 
     def test_telephone_cannot_be_deleted(self):
         '''
         Admin or user can't remove telephone number.
         '''
-        pass
-        # admin tries to remove telephone number
-        # user tries to remove telephone number
+        o = self.User.objects.create(
+            email=self.mails[0],
+            telephone=self.telephones[0],
+        )
+
+        with self.assertRaises(RestrictedError):
+            o.telephone.delete()
 
     def test_random_password_generation_with_email_sent(self):
         '''
         During account creation, random password is generated and sent to the user email.
         '''
-        pass
-        # email exists
-        # email not exists
+        # email exists and password sent => user is created
+        self.User.create_user(self.mails[0], self.telephones[0])
+        self.assertTrue(self.User.objects.get(pk=self.mails[0]))
+
+        # email not exists => user is not created
+        with self.assertRaises(models.AppUser.InvalidEmail):
+            self.User.create_user(self.mails[1], self.telephones[1])
+        self.assertFalse(self.User.objects.get(pk=self.mails[1]))
