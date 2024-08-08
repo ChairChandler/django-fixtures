@@ -7,7 +7,6 @@ import uuid
 
 
 class Telephone(models.Model):
-    id = models.AutoField(primary_key=True, default=0)
     telephone_prefix = models.IntegerField(
         "telephone number prefix",
         default=48,
