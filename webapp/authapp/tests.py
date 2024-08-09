@@ -1,12 +1,12 @@
-from ast import Delete
+from unittest.mock import patch
 from django.test import TestCase
 from django.forms import ValidationError
 from django.db import transaction  # type: ignore
 from django.db.utils import IntegrityError
-from django.db.models import RestrictedError
 from django.contrib.auth import get_user_model
 import random
 import string
+
 from . import models
 
 # Create your tests here.
@@ -143,26 +143,37 @@ class AppUserModelTest(TestCase):
         # check username
         self.assertEqual(o.get_username(), self.mails[1])
 
-    def test_telephone_is_required(self):
+    def test_telephone_is_optional(self):
         '''
-        Telephone number must be entered during creation.
+        Telephone number can be empty.
         '''
-        # it fails without telephone
+        # it runs without telephone
         with transaction.atomic():
-            with self.assertRaises(IntegrityError):
-                self.User.objects.create(
-                    email=self.mails[0],
-                    password=self.password
-                )
+            self.User.objects.create(
+                email=self.mails[0],
+                password=self.password
+            )
 
-        # after fixing account is created
+        # also runs with telephone
         with transaction.atomic():
             o = self.User.objects.create(
-                email=self.mails[0],
+                email=self.mails[1],
                 password=self.password,
                 telephone=self.telephones[0]
             )
             self.assertEqual(o.telephone, self.telephones[0])
+
+    def test_telephone_can_be_deleted(self):
+        '''
+        Admin can remove telephone of the user.
+        '''
+        o = self.User.objects.create(
+            email=self.mails[0],
+            telephone=self.telephones[0],
+            password=self.password
+        )
+        o.telephone.delete()  # type: ignore
+        self.assertFalse(o.telephone.pk)  # type: ignore
 
     def test_email_is_unique(self):
         '''
@@ -240,27 +251,30 @@ class AppUserModelTest(TestCase):
 
             self.User.objects.get(pk=mail).delete()
 
-    def test_telephone_cannot_be_deleted(self):
+    def test_admin_account_created(self):
         '''
-        Admin or user can't remove telephone number.
+        Admin account should be created using only email with prepared password.
         '''
-        o = self.User.objects.create(
-            email=self.mails[0],
-            telephone=self.telephones[0],
-        )
-
-        with self.assertRaises(RestrictedError):
-            o.telephone.delete()
+        self.User.create_admin(self.mails[0], self.password)
+        self.assertTrue(self.User.objects.get(pk=self.mails[0]))
 
     def test_random_password_generation_with_email_sent(self):
         '''
         During account creation, random password is generated and sent to the user email.
         '''
-        # email exists and password sent => user is created
-        self.User.create_user(self.mails[0], self.telephones[0])
-        self.assertTrue(self.User.objects.get(pk=self.mails[0]))
+        # send_mail
+        with patch('authapp.models.send_mail') as mock:
+            mock.return_value = 1
+            # email exists and password sent => user is created
+            self.User.create_user(self.mails[0], self.telephones[0])
+            mock.assert_called()
+            self.assertTrue(self.User.objects.get(pk=self.mails[0]))
 
-        # email not exists => user is not created
-        with self.assertRaises(models.AppUser.InvalidEmail):
-            self.User.create_user(self.mails[1], self.telephones[1])
-        self.assertFalse(self.User.objects.get(pk=self.mails[1]))
+        with patch('authapp.models.send_mail') as mock:
+            mock.return_value = 0
+            # email not exists => user is not created
+            with self.assertRaises(models.AppUser.InvalidEmail):
+                self.User.create_user(self.mails[1], self.telephones[1])
+            mock.assert_called()
+            with self.assertRaises(self.User.DoesNotExist):
+                self.User.objects.get(pk=self.mails[1])
