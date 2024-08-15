@@ -1,4 +1,3 @@
-from ast import Delete
 import random
 import string
 from django.test import TestCase
@@ -8,7 +7,7 @@ from django.db.utils import IntegrityError
 from unittest.mock import patch
 from more_itertools import first
 
-from .models import AppUser
+from .models import User
 
 # Create your tests here.
 
@@ -63,7 +62,7 @@ class AppUserModelTest(TestCase):
     ]
 
     def tearDown(self):
-        AppUser.objects.all().delete()
+        User.objects.all().delete()
 
     # EMAIL FIELD
 
@@ -74,7 +73,7 @@ class AppUserModelTest(TestCase):
         # insert email
         example_mail = first(self.valid_emails)
 
-        user = AppUser.objects.create(
+        user = User.objects.create(
             email=example_mail,
             password=first(self.passwords),
             telephone_number=first(self.telephones),
@@ -95,7 +94,7 @@ class AppUserModelTest(TestCase):
 
         with transaction.atomic():
             # insert mail
-            user = AppUser.objects.create(
+            user = User.objects.create(
                 email=example_mail,
                 telephone_number=self.telephones[0],
                 password=self.passwords[0]
@@ -106,7 +105,7 @@ class AppUserModelTest(TestCase):
         with transaction.atomic():
             # try insert it again
             with self.assertRaises(IntegrityError):
-                AppUser.objects.create(
+                User.objects.create(
                     email=example_mail,
                     telephone_number=self.telephones[1],
                     password=self.passwords[1]
@@ -118,7 +117,7 @@ class AppUserModelTest(TestCase):
         '''
         # insert valid email format
         for email in self.valid_emails:
-            user = AppUser.objects.create(
+            user = User.objects.create(
                 email=email,
                 telephone_number=first(self.telephones),
                 password=first(self.passwords)
@@ -129,7 +128,7 @@ class AppUserModelTest(TestCase):
 
         # insert invalid email format
         for email in self.invalid_emails:
-            user = AppUser.objects.create(
+            user = User.objects.create(
                 email=email,
                 telephone_number=first(self.telephones),
                 password=first(self.passwords)
@@ -139,7 +138,7 @@ class AppUserModelTest(TestCase):
 
             # we cannot remove object like above, because fields are empty
             # so we have to find it in the database
-            AppUser.objects.get(pk=email).delete()
+            User.objects.get(pk=email).delete()
 
         # insert invalid long emails
         long_mails = [
@@ -149,7 +148,7 @@ class AppUserModelTest(TestCase):
             ('invalid', 'a@@a.com'),
         ]
         for mail_type, mail in long_mails:
-            user = AppUser.objects.create(
+            user = User.objects.create(
                 email=mail,
                 telephone_number=first(self.telephones),
                 password=first(self.passwords)
@@ -160,7 +159,7 @@ class AppUserModelTest(TestCase):
                 with self.assertRaises(ValidationError):
                     user.full_clean()
 
-            AppUser.objects.get(pk=mail).delete()
+            User.objects.get(pk=mail).delete()
 
     # TELEPHONE FIELD
 
@@ -171,7 +170,7 @@ class AppUserModelTest(TestCase):
         '''
         for prefix in range(1, 999+1):
             with transaction.atomic():
-                user = AppUser.objects.create(
+                user = User.objects.create(
                     email=first(self.valid_emails),
                     telephone_prefix=prefix,
                     telephone_number=first(self.telephones),
@@ -179,11 +178,11 @@ class AppUserModelTest(TestCase):
                 )
                 user.full_clean()
                 self.assertEqual(user.telephone_prefix, prefix)
-                AppUser.objects.all().delete()
+                User.objects.all().delete()
 
         for prefix in [0, 5000]:
             with transaction.atomic(), self.assertRaises(ValidationError):
-                user = AppUser.objects.create(
+                user = User.objects.create(
                     email=first(self.valid_emails),
                     telephone_prefix=prefix,
                     telephone_number=first(self.telephones),
@@ -191,7 +190,7 @@ class AppUserModelTest(TestCase):
                 )
                 # we have to run validators
                 user.full_clean()
-            AppUser.objects.all().delete()
+            User.objects.all().delete()
 
     def test_phone_number_is_validated(self):
         '''
@@ -202,27 +201,27 @@ class AppUserModelTest(TestCase):
         for _ in range(100):
             with transaction.atomic():
                 telephone_number = ''.join(random.choices(string.digits, k=9))
-                user = AppUser.objects.create(
+                user = User.objects.create(
                     email=first(self.valid_emails),
                     telephone_number=telephone_number,
                     password=first(self.passwords)
                 )
                 user.full_clean()
                 self.assertEqual(user.telephone_number, telephone_number)
-            AppUser.objects.all().delete()
+            User.objects.all().delete()
 
         # lets generate some negative samples
         invalid_range = [*range(1, 8+1), *range(10, 20+1)]
         for k in invalid_range:
             with transaction.atomic(), self.assertRaises(ValidationError):
                 telephone_number = ''.join(random.choices(string.digits, k=k))
-                user = AppUser.objects.create(
+                user = User.objects.create(
                     email=first(self.valid_emails),
                     telephone_number=telephone_number,
                     password=first(self.passwords)
                 )
                 user.full_clean()
-            AppUser.objects.all().delete()
+            User.objects.all().delete()
 
     def test_prefix_with_phone_number_are_unique(self):
         '''
@@ -232,7 +231,7 @@ class AppUserModelTest(TestCase):
 
         # insert first
         with transaction.atomic():
-            user = AppUser.objects.create(
+            user = User.objects.create(
                 email=self.valid_emails[0],
                 telephone_number=telephone_number,
                 password=self.passwords[0]
@@ -241,7 +240,7 @@ class AppUserModelTest(TestCase):
 
         # insert second time
         with transaction.atomic(), self.assertRaises(IntegrityError):
-            AppUser.objects.create(
+            User.objects.create(
                 email=self.valid_emails[1],
                 telephone_number=telephone_number,
                 password=self.passwords[1]
@@ -253,16 +252,16 @@ class AppUserModelTest(TestCase):
         '''
         # it runs without telephone
         with transaction.atomic():
-            AppUser.objects.create(
+            User.objects.create(
                 email=first(self.valid_emails),
                 password=first(self.passwords)
             )
-        AppUser.objects.all().delete()
+        User.objects.all().delete()
 
         # also runs with telephone
         with transaction.atomic():
             telephone_number = first(self.telephones)
-            user = AppUser.objects.create(
+            user = User.objects.create(
                 email=first(self.valid_emails),
                 telephone_number=telephone_number,
                 password=first(self.passwords)
@@ -273,7 +272,7 @@ class AppUserModelTest(TestCase):
         '''
         Admin can remove telephone of the user.
         '''
-        user: AppUser = AppUser.objects.create(
+        user: User = User.objects.create(
             email=first(self.valid_emails),
             telephone_number=first(self.telephones),
             password=first(self.passwords)
@@ -289,73 +288,21 @@ class AppUserModelTest(TestCase):
         User account should be created using email and telephone.
         '''
         email = first(self.valid_emails)
-        AppUser.create_user(
+        User.objects.create_user(
             email=email,
             telephone_number=first(self.telephones)
         )
-        self.assertTrue(AppUser.objects.get(pk=email))
+        self.assertTrue(User.objects.get(pk=email))
 
     def test_create_admin_account(self):
         '''
         Admin account should be created using only email.
         '''
-        email = first(self.valid_emails)
-        AppUser.create_admin(email=email)
-        self.assertTrue(AppUser.objects.get(pk=email))
-
-    def test_email_sent_after_account_is_created(self):
-        '''
-        During account creation, random password is generated and sent to email.
-        '''
-        with patch('authapp.models.send_mail') as mock:
-            # e-mail exists, so return 1
-            mock.return_value = 1
-
-            # check if email is sentfor normal account
-            AppUser.create_user(
-                email=self.valid_emails[0],
-                telephone_number=first(self.telephones)
-            )
-            mock.assert_called()
-
-            # check if email is sent for admin account
-            AppUser.create_admin(email=self.valid_emails[1])
-            mock.assert_called()
-
-    def test_user_account_removed_for_invalid_email(self):
-        '''
-        If e-mail is invalid, then remove admin if we want to (by default).
-        '''
-        email = first(self.valid_emails)
-        telephone_number = first(self.telephones)
-        with patch('authapp.models.send_mail') as mock:
-            # e-mail doesn't exists, so return 0
-            mock.return_value = 0
-            # email not exists, so user is not created
-            with self.assertRaises(AppUser.InvalidEmail):
-                AppUser.create_user(
-                    email=email,
-                    telephone_number=telephone_number,
-                    delete_if_mail_not_exists=True
-                )
-            mock.assert_called()
-            with self.assertRaises(AppUser.DoesNotExist):
-                AppUser.objects.get(pk=email)
-
-    def test_admin_account_removed_for_invalid_email(self):
-        '''
-        If e-mail is invalid, then remove user if we want to (by default).
-        '''
-        email = first(self.valid_emails)
-        with patch('authapp.models.send_mail') as mock:
-            # e-mail doesn't exists, so return 0
-            mock.return_value = 0
-            # email not exists, so admin is not created
-            with self.assertRaises(AppUser.InvalidEmail):
-                AppUser.create_admin(
-                    email=email,
-                    delete_if_mail_not_exists=True
-                )
-            mock.assert_called()
-            with self.assertRaises(AppUser.DoesNotExist):
-                AppUser.objects.get(pk=email)
+        # test superuser
+        email = self.valid_emails[0]
+        User.objects.create_superuser(email=email, is_superuser=True)
+        self.assertTrue(User.objects.get(pk=email))
+        # test admin
+        email = self.valid_emails[1]
+        User.objects.create_user(email=email, is_staff=True)
+        self.assertTrue(User.objects.get(pk=email))

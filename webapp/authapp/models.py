@@ -1,4 +1,3 @@
-from typing import Optional
 from django.db import models
 from django.contrib import auth
 from django.contrib.auth.hashers import make_password
@@ -7,22 +6,37 @@ from django.core.mail import send_mail
 from django.contrib.auth.models import BaseUserManager, AbstractUser
 import uuid
 
+from django.forms import ValidationError
+
 # Create your models here.
 
 
 class AppUserManager(BaseUserManager):
     use_in_migrations = True
 
+    @staticmethod
+    def _generate_password():
+        return uuid.uuid4().hex
+
     def _create_user(self, email, password, **extra_fields):
         """
         Create and save a user with the given email and password.
+
+        Raises:
+            ValidationError
         """
         email = self.normalize_email(email)
         # Lookup the real model class from the global app registry so this
         # manager method can be used in migrations. This is fine because
         # managers are by definition working on the real model.
-        user = self.model(email=email, **extra_fields)
-        user.password = make_password(password)
+        user: User = self.model(email=email, **extra_fields)
+
+        if password is None:
+            password = self._generate_password()
+
+        user.set_password(password)
+        # check the model
+        user.full_clean()
         user.save(using=self._db)
         return user
 
@@ -70,7 +84,7 @@ class AppUserManager(BaseUserManager):
         return self.none()
 
 
-class AppUser(AbstractUser):
+class User(AbstractUser):
     email = models.EmailField(
         "email address",
         primary_key=True,
@@ -90,10 +104,11 @@ class AppUser(AbstractUser):
         "telephone number",
         max_length=9,
         null=True,
+        blank=True,
         validators=[
             validators.MinLengthValidator(9, "Invalid telephone value")
         ],
-        help_text=''
+        help_text='Required for user, optional for administrators'
     )
 
     class Meta:
@@ -127,113 +142,11 @@ class AppUser(AbstractUser):
         """Send an email to this user and return status code."""
         return send_mail(subject, message, from_email, [self.email], **kwargs)
 
-    @staticmethod
-    def create_user(
-        email: str,
-        telephone_number: str,
-        telephone_prefix: Optional[int] = None,
-        delete_if_mail_not_exists: bool = True
-    ) -> 'AppUser':
-        """
-        Create normal user account and send e-mail with password.
-
-        Args:
-            email: admin email address
-            telephone_prefix: user telephone prefix
-            telephone_number: user telephone number
-            delete_if_mail_not_exists: if mail not exists, then remove account
-
-        Returns:
-            AppUser: admin account object
-
-        Raises:
-            AppUser.InvalidEmail: E-mail with password cannot be send
-        """
-        return AppUser._create_account(
-            email=email,
-            is_admin=True,
-            telephone_number=telephone_number,
-            telephone_prefix=telephone_prefix,
-            delete_if_mail_not_exists=delete_if_mail_not_exists
-        )
-
-    @staticmethod
-    def create_admin(
-        email: str,
-        delete_if_mail_not_exists: bool = True
-    ) -> 'AppUser':
-        """
-        Create admin user account and send e-mail with password.
-
-        Args:
-            email: admin email address
-            delete_if_mail_not_exists: if mail not exists, then remove account
-
-        Returns:
-            AppUser: admin account object
-
-        Raises:
-            AppUser.InvalidEmail: E-mail with password cannot be send
-        """
-        return AppUser._create_account(
-            email=email,
-            is_admin=True,
-            delete_if_mail_not_exists=delete_if_mail_not_exists
-        )
-
-    @staticmethod
-    def _create_account(
-        email: str,
-        is_admin: bool,
-        telephone_prefix: Optional[int] = None,
-        telephone_number: Optional[str] = None,
-        delete_if_mail_not_exists: bool = True
-    ) -> 'AppUser':
-        """
-        Create user account with unique hashed password, send e-mail with 
-        this password.
-
-        Args:
-            email: user email address (and ID) to send password
-            is_admin: sets user as superuser
-            telephone_prefix: user telephone prefix
-            telephone_number: user telephone number
-            delete_if_mail_not_exists: if mail not exists, then remove account
-
-        Returns:
-            AppUser: user account object
-
-        Raises:
-            AppUser.InvalidEmail: E-mail with password cannot be send
-        """
-        password = uuid.uuid4().hex
-
-        to_call = AppUser.objects.create_superuser \
-            if is_admin \
-            else AppUser.objects.create_user
-
-        # set prefix to field default value
-        if not telephone_prefix:
-            field = AppUser._meta.get_field('telephone_prefix')
-            telephone_prefix = field.default
-
-        user = to_call(
-            email,
-            password,
-            telephone_prefix=telephone_prefix,
-            telephone_number=telephone_number
-        )
-
-        is_email_sent = user.email_user_with_status(
-            'Account created',
-            f'Password: {password}',
-            from_email='test@mail.com',
-            fail_silently=False
-        )
-        if not is_email_sent:
-            if delete_if_mail_not_exists:
-                user.delete()
-            msg = 'E-mail probably not exists - no password sent'
-            raise AppUser.InvalidEmail(msg)
-
-        return user
+    def clean(self):
+        super().clean()
+        is_admin = self.is_superuser or self.is_staff
+        # field should not be empty for normal user
+        if self.telephone_number is None and not is_admin:
+            raise ValidationError(
+                'Telephone number cannot be empty for normal user'
+            )
