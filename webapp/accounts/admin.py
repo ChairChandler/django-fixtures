@@ -3,7 +3,6 @@ from django.contrib import admin
 from django.forms import ModelForm
 from django.http import HttpRequest
 from more_itertools import chunked
-from django.contrib.auth.models import Group, Permission
 
 from .models import User
 
