@@ -11,7 +11,7 @@ from django.forms import ValidationError
 # Create your models here.
 
 
-class AppUserManager(BaseUserManager):
+class UserManager(BaseUserManager):
     use_in_migrations = True
 
     @staticmethod
@@ -127,7 +127,7 @@ class User(AbstractUser):
     first_name = None
     last_name = None
 
-    objects: AppUserManager = AppUserManager()  # type: ignore
+    objects: UserManager = UserManager()  # type: ignore
 
     class InvalidEmail(ValueError):
         pass

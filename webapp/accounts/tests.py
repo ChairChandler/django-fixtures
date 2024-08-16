@@ -12,7 +12,7 @@ from .models import User
 # Create your tests here.
 
 
-class AppUserModelTest(TestCase):
+class UserModelTest(TestCase):
     # https://codefool.tumblr.com/post/15288874550/list-of-valid-and-invalid-email-addresses
     valid_emails = [
         'email@example.com',
