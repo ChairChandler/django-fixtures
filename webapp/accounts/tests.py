@@ -4,7 +4,6 @@ from django.test import TestCase
 from django.forms import ValidationError
 from django.db import transaction  # type: ignore
 from django.db.utils import IntegrityError
-from unittest.mock import patch
 from more_itertools import first
 
 from .models import User
