@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
-    'dashboards.apps.DashboardsConfig'
+    'user_dashboard.apps.UserDashboardConfig'
 ]
 
 MIDDLEWARE = [
@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'webapp.middleware.UserRedirectMiddleware'
 ]
 
 ROOT_URLCONF = 'webapp.urls'
@@ -129,4 +130,4 @@ AUTH_USER_MODEL = 'accounts.User'
 EMAIL_PORT = 1025
 EMAIL_HOST = '192.168.2.1'
 
-LOGIN_REDIRECT_URL = '/dashboards'
+LOGIN_REDIRECT_URL = '/'
