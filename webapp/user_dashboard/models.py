@@ -7,12 +7,13 @@ import datetime
 
 
 class ReservationUnit(models.Model):
+    "Allows user to take up a reservation in a time-specific event."
     date_start = models.DateTimeField()
     date_stop = models.DateTimeField()
     # who
     participant = models.ForeignKey(
         User,
-        on_delete=models.SET_NULL,
+        on_delete=models.DO_NOTHING,
         null=True,
         blank=True,
         parent_link=True,
@@ -20,6 +21,11 @@ class ReservationUnit(models.Model):
     )
     # is accepted
     confirmed = models.BooleanField(default=False)
+
+    def clean(self):
+        super().clean()
+        if self.date_start >= self.date_stop:
+            raise ValidationError('Invalid reservation dates')
 
 
 def validate_time(min_time: datetime.time, max_time: datetime.time):
