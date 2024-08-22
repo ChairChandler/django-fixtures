@@ -137,7 +137,7 @@ class UserModelTest(TestCase):
 
             # we cannot remove object like above, because fields are empty
             # so we have to find it in the database
-            User.objects.get(pk=email).delete()
+            User.objects.get(email=email).delete()
 
         # insert invalid long emails
         long_mails = [
@@ -158,7 +158,7 @@ class UserModelTest(TestCase):
                 with self.assertRaises(ValidationError):
                     user.full_clean()
 
-            User.objects.get(pk=mail).delete()
+            User.objects.get(email=mail).delete()
 
     # TELEPHONE FIELD
 
@@ -291,7 +291,7 @@ class UserModelTest(TestCase):
             email=email,
             telephone_number=first(self.telephones)
         )
-        self.assertTrue(User.objects.get(pk=email))
+        self.assertTrue(User.objects.get(email=email))
 
     def test_create_admin_account(self):
         '''
@@ -300,8 +300,8 @@ class UserModelTest(TestCase):
         # test superuser
         email = self.valid_emails[0]
         User.objects.create_superuser(email=email, is_superuser=True)
-        self.assertTrue(User.objects.get(pk=email))
+        self.assertTrue(User.objects.get(email=email))
         # test admin
         email = self.valid_emails[1]
         User.objects.create_user(email=email, is_staff=True)
-        self.assertTrue(User.objects.get(pk=email))
+        self.assertTrue(User.objects.get(email=email))
