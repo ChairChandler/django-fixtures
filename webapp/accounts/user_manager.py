@@ -2,7 +2,7 @@ from django.contrib import auth
 from django.contrib.auth.models import BaseUserManager
 import uuid
 
-from .models import User
+import accounts.models as models
 
 
 class UserManager(BaseUserManager):
@@ -23,7 +23,7 @@ class UserManager(BaseUserManager):
         # Lookup the real model class from the global app registry so this
         # manager method can be used in migrations. This is fine because
         # managers are by definition working on the real model.
-        user: User = self.model(email=email, **extra_fields)
+        user: models.User = self.model(email=email, **extra_fields)
 
         if password is None:
             password = self._generate_password()

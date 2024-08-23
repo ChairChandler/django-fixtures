@@ -57,7 +57,10 @@ class UserModelTest(TestCase):
 
     telephones = [
         '123456789',
-        '000000000'
+        '000000000',
+        '111111111',
+        '444444444',
+        '555555555'
     ]
 
     def tearDown(self):
@@ -245,19 +248,52 @@ class UserModelTest(TestCase):
                 password=self.passwords[1]
             )
 
-    def test_telephone_is_optional(self):
+    def test_telephone_is_optional_for_admin(self):
         '''
-        Telephone number can be empty.
+        Telephone number can be empty for admin.
         '''
-        # it runs without telephone
+        # we can have admin or superuser
+        emails_iter = iter(self.valid_emails)
+        telephone_number_iter = iter(self.telephones)
+
+        for attr in ['is_superuser', 'is_staff']:
+            # it runs without telephone
+            with transaction.atomic():
+                o = User.objects.create(
+                    email=next(emails_iter),
+                    password=first(self.passwords),
+                    **{attr: True}
+                )
+                o.full_clean()
+
+            # also runs with telephone
+            with transaction.atomic():
+                telephone_number = next(telephone_number_iter)
+
+                user = User.objects.create(
+                    email=next(emails_iter),
+                    telephone_number=telephone_number,
+                    password=first(self.passwords),
+                    **{attr: True}
+                )
+                user.full_clean()
+                self.assertEqual(user.telephone_number, telephone_number)
+
+    def test_telephone_is_required_for_user(self):
+        '''
+        Telephone number is required for user.
+        '''
+        # it cannot runs without telephone
         with transaction.atomic():
-            User.objects.create(
-                email=first(self.valid_emails),
-                password=first(self.passwords)
-            )
+            with self.assertRaises(User.TelephoneError):
+                u = User.objects.create(
+                    email=first(self.valid_emails),
+                    password=first(self.passwords)
+                )
+                u.full_clean()
         User.objects.all().delete()
 
-        # also runs with telephone
+        # it runs with telephone
         with transaction.atomic():
             telephone_number = first(self.telephones)
             user = User.objects.create(
@@ -265,6 +301,7 @@ class UserModelTest(TestCase):
                 telephone_number=telephone_number,
                 password=first(self.passwords)
             )
+            user.full_clean()
             self.assertEqual(user.telephone_number, telephone_number)
 
     def test_telephone_can_be_deleted(self):

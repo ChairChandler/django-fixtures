@@ -2,8 +2,8 @@ from django.db import models
 from django.core import validators
 from django.core.mail import send_mail
 from django.contrib.auth.models import AbstractUser
+import uuid
 
-from django.forms import ValidationError
 from .user_manager import UserManager
 
 # Create your models here.
@@ -13,13 +13,13 @@ def validate_telephone(value: 'User'):
     "Telephone cannot not be empty for normal user."
     is_admin = (value.is_superuser or value.is_staff)
     if value.telephone_number is None and not is_admin:
-        raise ValidationError(
+        raise User.TelephoneError(
             'Telephone number cannot be empty for normal user'
         )
 
 
 class User(AbstractUser):
-    uuid = models.UUIDField(primary_key=True)
+    uuid = models.UUIDField(default=uuid.uuid4, primary_key=True)
     email = models.EmailField(
         "email address",
         unique=True,
@@ -64,7 +64,7 @@ class User(AbstractUser):
 
     objects: UserManager = UserManager()  # type: ignore
 
-    class InvalidEmail(ValueError):
+    class TelephoneError(ValueError):
         pass
 
     def get_full_name(self):
