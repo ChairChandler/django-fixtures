@@ -16,6 +16,6 @@ def send_mail_with_password(sender, instance: User, created, **kwargs):
 
         if not is_email_sent:
             instance.delete()
-            raise User.InvalidEmail(
+            raise User.TelephoneError(
                 'E-mail probably not exists - no password sent'
             )

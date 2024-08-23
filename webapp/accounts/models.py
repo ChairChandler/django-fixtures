@@ -1,92 +1,28 @@
 from django.db import models
-from django.contrib import auth
 from django.core import validators
 from django.core.mail import send_mail
-from django.contrib.auth.models import BaseUserManager, AbstractUser
+from django.contrib.auth.models import AbstractUser
 import uuid
 
-from django.forms import ValidationError
+from .user_manager import UserManager
 
 # Create your models here.
 
 
-class UserManager(BaseUserManager):
-    use_in_migrations = True
-
-    @staticmethod
-    def _generate_password():
-        return uuid.uuid4().hex
-
-    def _create_user(self, email, password, **extra_fields):
-        """
-        Create and save a user with the given email and password.
-
-        Raises:
-            ValidationError
-        """
-        email = self.normalize_email(email)
-        # Lookup the real model class from the global app registry so this
-        # manager method can be used in migrations. This is fine because
-        # managers are by definition working on the real model.
-        user: User = self.model(email=email, **extra_fields)
-
-        if password is None:
-            password = self._generate_password()
-
-        user.set_password(password)
-        # check the model
-        user.full_clean()
-        user.save(using=self._db)
-        return user
-
-    def create_user(self, email=None, password=None, **extra_fields):
-        extra_fields.setdefault("is_staff", False)
-        extra_fields.setdefault("is_superuser", False)
-        return self._create_user(email, password, **extra_fields)
-
-    def create_superuser(self, email=None, password=None, **extra_fields):
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
-
-        if extra_fields.get("is_staff") is not True:
-            raise ValueError("Superuser must have is_staff=True.")
-        if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Superuser must have is_superuser=True.")
-
-        return self._create_user(email, password, **extra_fields)
-
-    def with_perm(
-        self, perm, is_active=True, include_superusers=True, backend=None, obj=None
-    ):
-        if backend is None:
-            backends = auth._get_backends(return_tuples=True)  # type: ignore
-            if len(backends) == 1:
-                backend, _ = backends[0]
-            else:
-                raise ValueError(
-                    "You have multiple authentication backends configured and "
-                    "therefore must provide the `backend` argument."
-                )
-        elif not isinstance(backend, str):
-            raise TypeError(
-                "backend must be a dotted import path string (got %r)." % backend
-            )
-        else:
-            backend = auth.load_backend(backend)
-        if hasattr(backend, "with_perm"):
-            return backend.with_perm(
-                perm,
-                is_active=is_active,
-                include_superusers=include_superusers,
-                obj=obj,
-            )
-        return self.none()
+def validate_telephone(value: 'User'):
+    "Telephone cannot not be empty for normal user."
+    is_admin = (value.is_superuser or value.is_staff)
+    if value.telephone_number is None and not is_admin:
+        raise User.TelephoneError(
+            'Telephone number cannot be empty for normal user'
+        )
 
 
 class User(AbstractUser):
+    uuid = models.UUIDField(default=uuid.uuid4, primary_key=True)
     email = models.EmailField(
         "email address",
-        primary_key=True,
+        unique=True,
         max_length=64
     )
     telephone_prefix = models.IntegerField(
@@ -128,7 +64,7 @@ class User(AbstractUser):
 
     objects: UserManager = UserManager()  # type: ignore
 
-    class InvalidEmail(ValueError):
+    class TelephoneError(ValueError):
         pass
 
     def get_full_name(self):
@@ -143,9 +79,4 @@ class User(AbstractUser):
 
     def clean(self):
         super().clean()
-        is_admin = self.is_superuser or self.is_staff
-        # field should not be empty for normal user
-        if self.telephone_number is None and not is_admin:
-            raise ValidationError(
-                'Telephone number cannot be empty for normal user'
-            )
+        validate_telephone(self)
