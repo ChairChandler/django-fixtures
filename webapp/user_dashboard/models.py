@@ -71,18 +71,23 @@ class ReservationsCalendar(models.Model):
 def validate_reservation_dates(value: 'ReservationUnit'):
     "Check if start and stop date are valid."
     if value.date_start >= value.date_stop:
-        raise ValidationError('Invalid reservation dates')
+        raise ReservationUnit.InvalidDateError(
+            'Invalid reservation dates'
+        )
 
 
 def validate_unique_reservation(value: 'ReservationUnit'):
-    "Check if reservations don't interleaves wirth each other for the same calendar."
+    "Check if reservations don't interleaves with each other for the same calendar."
     interleave = ReservationUnit.objects.filter(
-        date_start__lt__=value.date_stop,
-        date_stop__gt__=value.date_start,
-        calendar=value.calendar
+        ~models.Q(pk=value.pk),
+        date_start__lt=value.date_stop,
+        date_stop__gt=value.date_start,
+        calendar=value.calendar,
     )
     if interleave.exists():
-        raise ValidationError('Date interleave with the other dates')
+        raise ReservationUnit.CalendarReservationError(
+            'Date interleave with the other dates'
+        )
 
 
 def validate_calendar_reservation(value: 'ReservationUnit'):
@@ -93,11 +98,18 @@ def validate_calendar_reservation(value: 'ReservationUnit'):
     start_date = value.calendar.week_date
     end_date = value.calendar.week_date + datetime.timedelta(days=7)
 
-    if value.date_start < start_date or value.date_stop > end_date:
-        raise ValidationError('Date does not belongs to the calendar week')
+    before_calendar_week = (value.date_start < start_date)
+    after_calendar_week = (value.date_stop > end_date)
 
-    if (value.date_stop - value.date_start) != value.calendar.unit_duration:
-        raise ValidationError(
+    if before_calendar_week or after_calendar_week:
+        raise ReservationUnit.CalendarDateError(
+            'Date does not belongs to the calendar week'
+        )
+
+    value_date_diff = (value.date_stop - value.date_start)
+
+    if value_date_diff != value.calendar.unit_duration:
+        raise ReservationUnit.CalendarDurationError(
             'Reservation has different duration time than preset in calendar'
         )
 
@@ -125,6 +137,18 @@ class ReservationUnit(models.Model):
     )
     # is accepted
     confirmed = models.BooleanField(default=False)
+
+    class InvalidDateError(ValueError):
+        pass
+
+    class CalendarReservationError(ValueError):
+        pass
+
+    class CalendarDateError(ValueError):
+        pass
+
+    class CalendarDurationError(ValueError):
+        pass
 
     def clean(self):
         super().clean()

@@ -1,116 +1,120 @@
-from datetime import datetime
-from django.forms import ValidationError
-from more_itertools import first
 from django.test import TestCase
-from user_dashboard.models import ReservationUnit, ReservationsCalendar
+from user_dashboard.models import *
+from .fixtures import ReservationUnitFixturesManager
 
 
 class ReservationUnitTest(TestCase):
-    def test_valid_dates(
-        self,
-        start_date: datetime,
-        example_valid_stop_date: datetime,
-        example_calendar: ReservationsCalendar
-    ):
+    manager = ReservationUnitFixturesManager()
+
+    def tearDown(self):
+        ReservationUnit.objects.all().delete()
+
+    def test_valid_dates(self):
         "If start date is before stop date, then create reservation."
+        (
+            date_start,
+            date_stop,
+            calendar
+        ) = self.manager.test_valid_dates
+
         o = ReservationUnit.objects.create(
-            date_start=start_date,
-            date_stop=example_valid_stop_date,
-            calendar=example_calendar
+            date_start=date_start,
+            date_stop=date_stop,
+            calendar=calendar
         )
-        o.full_clean()
-        self.assertTrue(ReservationUnit.objects.get(pk=o.pk))
+        validate_reservation_dates(o)
 
-    def test_invalid_dates(
-        self,
-        start_date: datetime,
-        example_invalid_stop_date: datetime,
-        example_calendar: ReservationsCalendar
-    ):
+    def test_invalid_dates(self):
         "If start date is after stop date, then throw exception."
-        with self.assertRaises(ValidationError):
-            o = ReservationUnit.objects.create(
-                date_start=start_date,
-                date_stop=example_invalid_stop_date,
-                calendar=example_calendar
-            )
-            o.full_clean()
+        (
+            date_start,
+            date_stop,
+            calendar
+        ) = self.manager.test_invalid_dates
 
-    def test_valid_unique_reservations(
-        self,
-        example_calendar: ReservationsCalendar,
-        valid_reservation_dates: list[tuple]
-    ):
+        with self.assertRaises(ReservationUnit.InvalidDateError):
+            o = ReservationUnit.objects.create(
+                date_start=date_start,
+                date_stop=date_stop,
+                calendar=calendar
+            )
+            validate_reservation_dates(o)
+
+    def test_valid_unique_reservations(self):
         '''
         If reservations are assigned to the same calendar and not interleaves
         with each other, then pass.
         '''
-        for (start, stop) in valid_reservation_dates:
+        (
+            dates,
+            calendar
+        ) = self.manager.test_valid_unique_reservations
+
+        for start, stop in dates:
             o = ReservationUnit.objects.create(
                 date_start=start,
                 date_stop=stop,
-                calendar=example_calendar
+                calendar=calendar
             )
-            o.full_clean()
-            self.assertTrue(ReservationUnit.objects.get(pk=o.pk))
+            validate_unique_reservation(o)
 
-    def test_invalid_unique_reservations(
-        self,
-        example_calendar: ReservationsCalendar,
-        invalid_reservation_dates: list[tuple]
-    ):
+    def test_invalid_unique_reservations(self):
         '''
         If reservations are assigned to the same calendar and interleaves
         with each other, then fail.
         '''
+        (
+            (start, stop),
+            another_dates,
+            calendar
+        ) = self.manager.test_invalid_unique_reservations
+
         # create first object
-        start, stop = first(invalid_reservation_dates)
         ReservationUnit.objects.create(
             date_start=start,
             date_stop=stop,
-            calendar=example_calendar
+            calendar=calendar
         )
-        for (start, stop) in invalid_reservation_dates[1:]:
-            with self.assertRaises(ValidationError):
+        for start, stop in another_dates:
+            with self.assertRaises(ReservationUnit.CalendarReservationError):
                 o = ReservationUnit.objects.create(
                     date_start=start,
                     date_stop=stop,
-                    calendar=example_calendar
+                    calendar=calendar
                 )
-                o.full_clean()
+                validate_unique_reservation(o)
 
-    def test_valid_dates_with_calendar_dates(
-        self,
-        example_calendar: ReservationsCalendar
-    ):
-        '''
-        If reservations dates are in calendar week date, then pass. 
-        '''
-        pass
-
-    def test_invalid_dates_with_calendar_dates(
-        self,
-        example_calendar: ReservationsCalendar
-    ):
+    def test_invalid_dates_with_calendar_dates(self):
         '''
         If reservations dates are not in calendar week date, then fail.
         '''
-        pass
+        (
+            calendar,
+            invalid_dates
+        ) = self.manager.test_invalid_dates_with_calendar_dates
 
-    def test_valid_reservation_duration(
-        self,
-        example_calendar: ReservationsCalendar
-    ):
+        for start, stop in invalid_dates:
+            with self.assertRaises(ReservationUnit.CalendarDateError):
+                o = ReservationUnit.objects.create(
+                    date_start=start,
+                    date_stop=stop,
+                    calendar=calendar
+                )
+                validate_calendar_reservation(o)
+
+    def test_invalid_reservation_duration(self):
         '''
         If reservation duration is different than calendar reservation duration, then fail.
         '''
-        pass
+        (
+            calendar,
+            diff
+        ) = self.manager.test_invalid_reservation_duration
 
-    def test_invalid_reservation_duration(
-        self,
-        example_calendar: ReservationsCalendar
-    ):
-        '''
-        If reservation duration is different than calendar reservation duration, then fail.
-        '''
-        pass
+        with self.assertRaises(ReservationUnit.CalendarDurationError):
+            o = ReservationUnit.objects.create(
+                date_start=calendar.week_date,
+                date_stop=calendar.week_date + diff,
+                calendar=calendar
+            )
+            validate_calendar_reservation(o)

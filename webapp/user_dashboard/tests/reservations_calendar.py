@@ -1,64 +1,68 @@
-from more_itertools import first
 from django.test import TestCase
-from user_dashboard.models import ReservationsCalendar
-from .fixtures import ReservationsCalendarFixtures
+from user_dashboard.models import *
+from .fixtures import ReservationsCalendarFixturesManager
 # Create your tests here.
 
 
 class ReservationsCalendarTest(TestCase):
-    fixtures_obj = ReservationsCalendarFixtures()
+    manager = ReservationsCalendarFixturesManager()
+
+    def tearDown(self):
+        ReservationsCalendar.objects.all().delete()
 
     def test_valid_unit_duration(self):
         "Unit duration must pass for values between 15 minutes up to 4 hours."
-        calendar_info = zip(
-            self.fixtures_obj.valid_unit_duration_values,
-            self.fixtures_obj.valid_week_dates
-        )
-        for duration, week_date in calendar_info:
-            o = ReservationsCalendar.objects.create(
-                week_date=week_date,
-                unit_duration=duration
-            )
-            o.full_clean()
-            self.assertTrue(ReservationsCalendar.objects.get(pk=o.pk))
+        durations = self.manager.test_valid_unit_duration
+
+        # lazy field - ignore
+        validator = ReservationsCalendar.unit_duration.field.validators[0]  # type: ignore
+
+        for d in durations:
+            validator(d)
 
     def test_invalid_unit_duration(self):
         "Unit duration can't pass for values lower than 15 minutes or above 4 hours."
-        calendar_info = zip(
-            self.fixtures_obj.invalid_unit_duration_values,
-            self.fixtures_obj.valid_week_dates
-        )
-        for duration, week_date in calendar_info:
+        durations = self.manager.test_invalid_unit_duration
+
+        # lazy field - ignore
+        validator = ReservationsCalendar.unit_duration.field.validators[0] # type: ignore
+
+        for d in durations:
             with self.assertRaises(ReservationsCalendar.UnitDurationError):
-                o = ReservationsCalendar.objects.create(
-                    week_date=week_date,
-                    unit_duration=duration
-                )
-                o.full_clean()
+                validator(d)
 
     def test_calendar_doesnt_interleaves_with_others(self):
         "Multiple calendars have different valid times ranges (valid)."
-        for date in self.fixtures_obj.valid_week_dates:
+        (
+            weeks,
+            duration
+        ) = self.manager.test_calendar_doesnt_interleaves_with_others
+
+        for date in weeks:
             o = ReservationsCalendar.objects.create(
                 week_date=date,
-                unit_duration=self.fixtures_obj.example_valid_unit_duration
+                unit_duration=duration
             )
-            o.full_clean()
-            self.assertTrue(ReservationsCalendar.objects.get(pk=o.pk))
+            validate_calendar(o)
 
     def test_calendar_interleave_with_others(self):
         "Multiple calendars interleaves in dates with each other (invalid)."
+        (
+            first_insert_date,
+            unit_duration,
+            another_insert_dates
+        ) = self.manager.test_calendar_interleave_with_others
+
         # insert first
         o = ReservationsCalendar.objects.create(
-            week_date=first(self.fixtures_obj.invalid_week_dates),
-            unit_duration=self.fixtures_obj.example_valid_unit_duration
+            week_date=first_insert_date,
+            unit_duration=unit_duration
         )
-        o.full_clean()
         # check the rest
-        for date in self.fixtures_obj.invalid_week_dates[1:]:
+        for date in another_insert_dates:
             with self.assertRaises(ReservationsCalendar.InterleaveError):
                 o = ReservationsCalendar.objects.create(
                     week_date=date,
-                    unit_duration=self.fixtures_obj.example_valid_unit_duration
+                    unit_duration=unit_duration
                 )
-                o.full_clean()
+                validate_calendar(o)
