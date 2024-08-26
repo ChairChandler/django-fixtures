@@ -2,8 +2,8 @@ from django.db import models
 from django.forms import ValidationError
 from accounts.models import User
 import datetime
-from webapp.user_dashboard.models import ReservationUnit
 
+import uuid
 # Create your models here.
 
 
@@ -11,9 +11,13 @@ def validate_time(min_time: datetime.time, max_time: datetime.time):
     "Check if time is in range <min_time; max_time>"
     def inner_validator(value: datetime.time):
         if value < min_time:
-            raise ValidationError(f'Time cannot be less than {min_time}')
+            raise ReservationsCalendar.UnitDurationError(
+                f'Time cannot be less than {min_time}'
+            )
         if value > max_time:
-            raise ValidationError(f'Time cannot be more than {max_time}')
+            raise ReservationsCalendar.UnitDurationError(
+                f'Time cannot be more than {max_time}'
+            )
 
     return inner_validator
 
@@ -23,23 +27,26 @@ def validate_calendar(value: 'ReservationsCalendar'):
 
     # create temporary field
     computed_field = models.ExpressionWrapper(
-        expression=models.F('week_date') + 7,
+        expression=models.F('week_date') + datetime.timedelta(days=7),
         output_field=models.DateField()
     )
 
     # call methods on fields
     week = ReservationsCalendar.objects.annotate(week_date_end=computed_field)
     in_range = week.filter(
-        week_date__lt__=value.week_date,
-        week_date_end__gt__=value.week_date
+        ~models.Q(pk=value.pk),
+        week_date__lte=value.week_date,
+        week_date_end__gt=value.week_date,
     )
     if in_range.exists():
-        raise ValidationError('Calendar interleave with the other calendar')
+        raise ReservationsCalendar.InterleaveError(
+            'Calendar interleave with the other calendar'
+        )
 
 
 class ReservationsCalendar(models.Model):
     "Week reservations calendar."
-    uuid = models.UUIDField(primary_key=True)
+    uuid = models.UUIDField(default=uuid.uuid4, primary_key=True)
     week_date = models.DateField(unique=True)
     unit_duration = models.TimeField(
         default=datetime.time(minute=45),
@@ -50,29 +57,40 @@ class ReservationsCalendar(models.Model):
             )]
     )
 
+    class UnitDurationError(ValueError):
+        pass
+
+    class InterleaveError(ValueError):
+        pass
+
     def clean(self):
         super().clean()
         validate_calendar(self)
 
 
-def validate_reservation_dates(value: ReservationUnit):
+def validate_reservation_dates(value: 'ReservationUnit'):
     "Check if start and stop date are valid."
     if value.date_start >= value.date_stop:
-        raise ValidationError('Invalid reservation dates')
+        raise ReservationUnit.InvalidDateError(
+            'Invalid reservation dates'
+        )
 
 
-def validate_unique_reservation(value: ReservationUnit):
-    "Check if reservations don't interleaves wirth each other for the same calendar."
+def validate_unique_reservation(value: 'ReservationUnit'):
+    "Check if reservations don't interleaves with each other for the same calendar."
     interleave = ReservationUnit.objects.filter(
-        date_start__lt__=value.date_stop,
-        date_stop__gt__=value.date_start,
-        calendar=value.calendar
+        ~models.Q(pk=value.pk),
+        date_start__lt=value.date_stop,
+        date_stop__gt=value.date_start,
+        calendar=value.calendar,
     )
     if interleave.exists():
-        raise ValidationError('Date interleave with the other dates')
+        raise ReservationUnit.CalendarReservationError(
+            'Date interleave with the other dates'
+        )
 
 
-def validate_calendar_reservation(value: ReservationUnit):
+def validate_calendar_reservation(value: 'ReservationUnit'):
     '''
     Check if reservation unit belongs to the parent calendar week and has 
     preset calendar unit duration time.
@@ -80,18 +98,25 @@ def validate_calendar_reservation(value: ReservationUnit):
     start_date = value.calendar.week_date
     end_date = value.calendar.week_date + datetime.timedelta(days=7)
 
-    if value.date_start < start_date or value.date_stop > end_date:
-        raise ValidationError('Date does not belongs to the calendar week')
+    before_calendar_week = (value.date_start < start_date)
+    after_calendar_week = (value.date_stop > end_date)
 
-    if (value.date_stop - value.date_start) != value.calendar.unit_duration:
-        raise ValidationError(
+    if before_calendar_week or after_calendar_week:
+        raise ReservationUnit.CalendarDateError(
+            'Date does not belongs to the calendar week'
+        )
+
+    value_date_diff = (value.date_stop - value.date_start)
+
+    if value_date_diff != value.calendar.unit_duration:
+        raise ReservationUnit.CalendarDurationError(
             'Reservation has different duration time than preset in calendar'
         )
 
 
 class ReservationUnit(models.Model):
     "Allows user to take up a reservation in a time-specific event."
-    uuid = models.UUIDField(primary_key=True)
+    uuid = models.UUIDField(default=uuid.uuid4, primary_key=True)
     # when
     date_start = models.DateTimeField()
     date_stop = models.DateTimeField()
@@ -112,6 +137,18 @@ class ReservationUnit(models.Model):
     )
     # is accepted
     confirmed = models.BooleanField(default=False)
+
+    class InvalidDateError(ValueError):
+        pass
+
+    class CalendarReservationError(ValueError):
+        pass
+
+    class CalendarDateError(ValueError):
+        pass
+
+    class CalendarDurationError(ValueError):
+        pass
 
     def clean(self):
         super().clean()
