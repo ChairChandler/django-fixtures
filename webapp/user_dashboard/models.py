@@ -27,15 +27,16 @@ def validate_calendar(value: 'ReservationsCalendar'):
 
     # create temporary field
     computed_field = models.ExpressionWrapper(
-        expression=models.F('week_date') + 7,
+        expression=models.F('week_date') + datetime.timedelta(days=7),
         output_field=models.DateField()
     )
 
     # call methods on fields
     week = ReservationsCalendar.objects.annotate(week_date_end=computed_field)
     in_range = week.filter(
-        week_date__lt__=value.week_date,
-        week_date_end__gt__=value.week_date
+        ~models.Q(pk=value.pk),
+        week_date__lte=value.week_date,
+        week_date_end__gt=value.week_date,
     )
     if in_range.exists():
         raise ReservationsCalendar.InterleaveError(
