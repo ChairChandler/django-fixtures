@@ -152,9 +152,6 @@ class ReservationUnit(models.Model):
     class CalendarDurationError(ValidationError):
         pass
 
-    class ReservationError(ValidationError):
-        pass
-
     def clean(self):
         super().clean()
         validate_reservation_dates(self)

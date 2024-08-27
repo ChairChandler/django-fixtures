@@ -1,11 +1,9 @@
 from django.urls import path, include
-from django.views.generic.base import TemplateView
-from django.contrib.auth.decorators import login_required
+import views
 
 urlpatterns = [
-    path('',
-         login_required(TemplateView.as_view(
-             template_name='user_dashboard/calendar.html')),
-         name='index'
-         )
+    path('', views.redirect_to_current_calendar, name='index'),
+    path('/<str:calendar_id>', views.show_calendar, name='calendar'),
+    path('reservation/join/<str:reservation_id>',
+         views.check_reservation_participant, name='reservation_join')
 ]
