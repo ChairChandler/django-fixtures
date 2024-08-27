@@ -19,6 +19,20 @@ class ReservationsCalendarFixturesManager:
         return durations
 
     @property
+    def test_valid_lock_time(self):
+
+        durations = self.fixtures.valid_lock_time_values
+
+        return durations
+
+    @property
+    def test_invalid_lock_time(self):
+
+        durations = self.fixtures.invalid_lock_time_values
+
+        return durations
+
+    @property
     def test_calendar_doesnt_interleaves_with_others(self):
 
         weeks = self.fixtures.valid_week_dates

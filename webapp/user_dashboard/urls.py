@@ -1,9 +1,9 @@
 from django.urls import path, include
-import views
+from .views import *
 
 urlpatterns = [
-    path('', views.redirect_to_current_calendar, name='index'),
-    path('/<str:calendar_id>', views.show_calendar, name='calendar'),
+    path('', redirect_to_current_calendar, name='index'),
+    path('<str:calendar_id>', show_calendar, name='calendar'),
     path('reservation/join/<str:reservation_id>',
-         views.check_reservation_participant, name='reservation_join')
+         join_reservation, name='reservation_join')
 ]
