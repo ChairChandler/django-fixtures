@@ -13,11 +13,11 @@ def validate_time(min_time: datetime.time, max_time: datetime.time):
     @wraps(validate_time)
     def inner_validator(value: datetime.time):
         if value < min_time:
-            raise ReservationsCalendar.UnitDurationError(
+            raise ReservationsCalendar.TimeError(
                 f'Time cannot be less than {min_time}'
             )
         if value > max_time:
-            raise ReservationsCalendar.UnitDurationError(
+            raise ReservationsCalendar.TimeError(
                 f'Time cannot be more than {max_time}'
             )
 
@@ -58,8 +58,17 @@ class ReservationsCalendar(models.Model):
                 max_time=datetime.time(hour=4)
             )]
     )
+    # time right before reservation, that is locked, cannot change anything
+    lock_time = models.TimeField(
+        default=datetime.time(hour=5),
+        validators=[
+            validate_time(
+                min_time=datetime.time(minute=30),
+                max_time=datetime.time(hour=23, minute=59, second=59)
+            )]
+    )
 
-    class UnitDurationError(ValidationError):
+    class TimeError(ValidationError):
         pass
 
     class InterleaveError(ValidationError):

@@ -64,6 +64,26 @@ class ReservationsCalendarFixtures:
             time(hour=12, tzinfo=TIME_ZONE_INFO)
         ]
 
+    @property
+    def valid_lock_time_values(self) -> list[time]:
+        return [
+            time(hour=1, tzinfo=TIME_ZONE_INFO),
+            time(hour=10, tzinfo=TIME_ZONE_INFO),
+            time(hour=15, minute=20, tzinfo=TIME_ZONE_INFO),
+            time(hour=22, minute=59, tzinfo=TIME_ZONE_INFO),
+            time(hour=23, tzinfo=TIME_ZONE_INFO)
+        ]
+
+    @property
+    def invalid_lock_time_values(self) -> list[time]:
+        return [
+            time(0, tzinfo=TIME_ZONE_INFO),
+            time(minute=3, tzinfo=TIME_ZONE_INFO),
+            time(minute=5, tzinfo=TIME_ZONE_INFO),
+            time(minute=10, tzinfo=TIME_ZONE_INFO),
+            time(minute=14, second=59, tzinfo=TIME_ZONE_INFO),
+        ]
+
 #
 #
 # ReservationUnit
