@@ -1,3 +1,4 @@
+from functools import wraps
 from django.db import models
 from django.forms import ValidationError
 from accounts.models import User
@@ -9,6 +10,7 @@ import uuid
 
 def validate_time(min_time: datetime.time, max_time: datetime.time):
     "Check if time is in range <min_time; max_time>"
+    @wraps(validate_time)
     def inner_validator(value: datetime.time):
         if value < min_time:
             raise ReservationsCalendar.UnitDurationError(
@@ -57,10 +59,10 @@ class ReservationsCalendar(models.Model):
             )]
     )
 
-    class UnitDurationError(ValueError):
+    class UnitDurationError(ValidationError):
         pass
 
-    class InterleaveError(ValueError):
+    class InterleaveError(ValidationError):
         pass
 
     def clean(self):
@@ -138,16 +140,19 @@ class ReservationUnit(models.Model):
     # is accepted
     confirmed = models.BooleanField(default=False)
 
-    class InvalidDateError(ValueError):
+    class InvalidDateError(ValidationError):
         pass
 
-    class CalendarReservationError(ValueError):
+    class CalendarReservationError(ValidationError):
         pass
 
-    class CalendarDateError(ValueError):
+    class CalendarDateError(ValidationError):
         pass
 
-    class CalendarDurationError(ValueError):
+    class CalendarDurationError(ValidationError):
+        pass
+
+    class ReservationError(ValidationError):
         pass
 
     def clean(self):
