@@ -2,6 +2,14 @@ import inspect
 from typing import Type, Callable
 from functools import wraps
 
+# I can't mix pytest fixtures with Django tests easily, I would like also
+# to avoid Django fixtures files, so decided to use manual objects access
+# to get fixtures workaround.
+
+
+class FixtureError(KeyError):
+    pass
+
 
 def use_fixture_namespace(NamespaceClass: Type) -> Callable:
     '''
@@ -67,7 +75,10 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
             func_args_names = filter(lambda x: x != 'self', func_args_names)
 
             # set values for fixtures to be used in injector
-            fix_map = {a: fixtures_getters[a] for a in func_args_names}
+            try:
+                fix_map = {a: fixtures_getters[a] for a in func_args_names}
+            except KeyError as e:
+                raise FixtureError('Fixture does not exists') from e
 
             # create wrapper for function
             # copy values from function to nested function

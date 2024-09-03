@@ -2,10 +2,11 @@ from datetime import date, time
 from django.test import TestCase
 from more_itertools import first
 from user_dashboard.models import *
-from user_dashboard.tests.fixtures import *
+from user_dashboard.tests.fixtures_namespace import *
+import fixture
 
 
-@use_fixture_namespace(ReservationsCalendarFixtures)
+@fixture.use_fixture_namespace(ReservationsCalendarFixtures)
 class ReservationsCalendarTest(TestCase):
     def tearDown(self):
         ReservationsCalendar.objects.all().delete()
