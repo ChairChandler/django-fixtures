@@ -1,11 +1,16 @@
 import inspect
-from functools import wraps
 from typing import Type, Callable
+from functools import wraps
 
 
-def use_fixture_namespace(namespace_class: Type) -> Callable:
+def use_fixture_namespace(NamespaceClass: Type) -> Callable:
     '''
     Injects fixture into methods arguments from class properties.
+    Method must starts with a `test` name.
+
+    Use in inspect module the following predicates for methods:
+    - `isdatadescriptor` for `@property` annotated,
+    - `ismethoddescriptor` for `@cached_property` annotated
 
     Example:
     ```
@@ -25,37 +30,60 @@ def use_fixture_namespace(namespace_class: Type) -> Callable:
             assert something == ['a', 'b', 'c', 'd']
     ```
     '''
+    # create object class to get access to properties
+    namespace_object = NamespaceClass()
 
-    T = namespace_class()
-
-    def inject_fixtures(destination_class: Type) -> Type:
-        # get properties from class
-        fixtures = {
-            name: getattr(T, name)
-            for (name, _) in inspect.getmembers(namespace_class, inspect.isdatadescriptor)
+    def inject_fixtures(InjectionClass: Type) -> Type:
+        "Inject fixtures to every `test` method of `InjectionClass`."
+        # get properties from namespace class
+        fixtures_getters = {
+            # property name: getter
+            # name=name means assign current reference value
+            # anonymous function allows to get the latest propety value
+            name: (lambda name=name: getattr(namespace_object, name))
+            for (name, _) in [
+                # get @property methods
+                *inspect.getmembers(NamespaceClass, inspect.isdatadescriptor),
+                # get @cached_property methods
+                *inspect.getmembers(NamespaceClass, inspect.ismethoddescriptor)
+            ]
             # remove from query set hidden or protected properties
-            if not name.startswith('_') and not name.endswith('_')
+            if not name.startswith('_')
         }
-        # get methods and methods-args from desired class
-        for (fname, func) in inspect.getmembers(destination_class, inspect.isfunction):
+        # get methods with names from desired class
+        test_methods = [
+            (fname, func)
+            # get methods
+            for (fname, func) in inspect.getmembers(InjectionClass, inspect.isfunction)
+            # get only test methods
+            if fname.startswith('test')
+        ]
+
+        # make fixture injections for every test method
+        for (fname, func) in test_methods:
             # get method arguments without self attribute
-            args = inspect.getargs(func.__code__).args
-            args = filter(lambda x: x != 'self', args)
+            func_args_names = inspect.getargs(func.__code__)
+            func_args_names = func_args_names.args
+            func_args_names = filter(lambda x: x != 'self', func_args_names)
 
             # set values for fixtures to be used in injector
-            fix_map = {}
-            for a in args:
-                arg_value = fixtures.get(a, None)
-                fix_map[a] = arg_value
+            fix_map = {a: fixtures_getters[a] for a in func_args_names}
 
             # create wrapper for function
+            # copy values from function to nested function
+            # to save current reference instead of the last variable reference
             @wraps(func)
-            def injector(*args, **kwargs):
-                return func(*args, **fix_map, **kwargs)
+            def injector(*args, func=func, fix_map=fix_map, **kwargs):
+                # unpack fixtures values from properties
+                prepared = {n: v() for n, v in fix_map.items() if v}
+                kwargs.update(prepared)
+                # run function with fixtures
+                return func(*args, **kwargs)
 
             # inject function with fixtures
-            setattr(destination_class, fname, injector)
+            setattr(InjectionClass, fname, injector)
 
-        return destination_class
+        # return modified class with new methods injections
+        return InjectionClass
 
     return inject_fixtures

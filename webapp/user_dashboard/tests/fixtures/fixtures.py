@@ -1,8 +1,8 @@
 from functools import cached_property
-from webapp.settings import TIME_ZONE
-from datetime import datetime, time, timedelta, date
 from more_itertools import first
 from user_dashboard.models import ReservationsCalendar
+from datetime import datetime, time, timedelta, date
+from webapp.settings import TIME_ZONE
 import pytz
 
 # I can't mix pytest fixtures with Django tests easily, I would like also
