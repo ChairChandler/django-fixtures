@@ -1,84 +1,36 @@
 import random
 import string
-from django.test import TestCase
-from django.forms import ValidationError
-from django.db import transaction  # type: ignore
+from typing import Type, Optional, Any
+from uuid import uuid4
+from django.test import TestCase, SimpleTestCase
+from django.forms import UUIDField, ValidationError
+from django.db import models, transaction  # type: ignore
 from django.db.utils import IntegrityError
 from more_itertools import first
-
-from .models import User
+from accounts.models import User
+from accounts.tests.fixtures_namespace import UserFixtures
+import fixture
 
 # Create your tests here.
 
-
+@fixture.use_fixture_namespace(UserFixtures)
 class UserModelTest(TestCase):
-    # https://codefool.tumblr.com/post/15288874550/list-of-valid-and-invalid-email-addresses
-    valid_emails = [
-        'email@example.com',
-        'firstname.lastname@example.com',
-        'email@subdomain.example.com',
-        'firstname+lastname@example.com',
-        'email@123.123.123.123',
-        'email@[123.123.123.123]',
-        '1234567890@example.com',
-        'email@example-one.com',
-        '_______@example.com',
-        'email@example.name',
-        'email@example.museum',
-        'email@example.co.jp',
-        'firstname-lastname@example.com',
-        'email@example.web',
-        'email@111.222.333.44444'
-    ]
-
-    invalid_emails = [
-        'plainaddress',
-        '# @%^%#$@#$@#.com',
-        '@ example.com',
-        'Joe Smith < email@example.com >',
-        'email.example.com',
-        'email@example@example.com',
-        '.email@example.com',
-        'email.@example.com',
-        'email..email@example.com',
-        'あいうえお@example.com',
-        'email@example.com(Joe Smith)',
-        'email@example',
-        'email@-example.com',
-        'email@example..com',
-        'Abc..123@example.com',
-        '“email”@ example.com'
-    ]
-
-    passwords = [
-        'pwd',
-        'example'
-    ]
-
-    telephones = [
-        '123456789',
-        '000000000',
-        '111111111',
-        '444444444',
-        '555555555'
-    ]
-
     def tearDown(self):
         User.objects.all().delete()
 
     # EMAIL FIELD
 
-    def test_email_is_username(self):
+    def test_email_is_username(self, valid_emails, passwords, telephones):
         '''
         Email must be a username, being an user ID.
         '''
         # insert email
-        example_mail = first(self.valid_emails)
+        example_mail = first(valid_emails)
 
         user = User.objects.create(
             email=example_mail,
-            password=first(self.passwords),
-            telephone_number=first(self.telephones),
+            password=first(passwords),
+            telephone_number=first(telephones),
         )
         user.full_clean()
 
@@ -88,18 +40,18 @@ class UserModelTest(TestCase):
         # check username
         self.assertEqual(user.get_username(), example_mail)
 
-    def test_email_is_unique(self):
+    def test_email_is_unique(self, valid_emails, telephones, passwords):
         '''
         Email must be used once.
         '''
-        example_mail = first(self.valid_emails)
+        example_mail = first(valid_emails)
 
         with transaction.atomic():
             # insert mail
             user = User.objects.create(
                 email=example_mail,
-                telephone_number=self.telephones[0],
-                password=self.passwords[0]
+                telephone_number=telephones[0],
+                password=passwords[0]
             )
             user.full_clean()
             self.assertEqual(user.email, example_mail)
@@ -109,31 +61,31 @@ class UserModelTest(TestCase):
             with self.assertRaises(IntegrityError):
                 User.objects.create(
                     email=example_mail,
-                    telephone_number=self.telephones[1],
-                    password=self.passwords[1]
+                    telephone_number=telephones[1],
+                    password=passwords[1]
                 )
 
-    def test_email_is_validated(self):
+    def test_email_is_validated(self, valid_emails, telephones, passwords, invalid_emails):
         '''
         Email must pass email validator and the length must be less than 64 chars. 
         '''
         # insert valid email format
-        for email in self.valid_emails:
+        for email in valid_emails:
             user = User.objects.create(
                 email=email,
-                telephone_number=first(self.telephones),
-                password=first(self.passwords)
+                telephone_number=first(telephones),
+                password=first(passwords)
             )
             user.full_clean()
             # telephone must be unique - remove user
             user.delete()
 
         # insert invalid email format
-        for email in self.invalid_emails:
+        for email in invalid_emails:
             user = User.objects.create(
                 email=email,
-                telephone_number=first(self.telephones),
-                password=first(self.passwords)
+                telephone_number=first(telephones),
+                password=first(passwords)
             )
             with self.assertRaises(ValidationError):
                 user.full_clean()
@@ -152,8 +104,8 @@ class UserModelTest(TestCase):
         for mail_type, mail in long_mails:
             user = User.objects.create(
                 email=mail,
-                telephone_number=first(self.telephones),
-                password=first(self.passwords)
+                telephone_number=first(telephones),
+                password=first(passwords)
             )
             if mail_type == 'valid':
                 user.full_clean()
@@ -165,7 +117,7 @@ class UserModelTest(TestCase):
 
     # TELEPHONE FIELD
 
-    def test_phone_prefix_is_validated(self):
+    def test_phone_prefix_is_validated(self, valid_emails, telephones, passwords):
         '''
         Check if telephone prefix is in international range between 1 and 999.
         It shoud fail if prefix is out of range.
@@ -173,10 +125,10 @@ class UserModelTest(TestCase):
         for prefix in range(1, 999+1):
             with transaction.atomic():
                 user = User.objects.create(
-                    email=first(self.valid_emails),
+                    email=first(valid_emails),
                     telephone_prefix=prefix,
-                    telephone_number=first(self.telephones),
-                    password=first(self.passwords)
+                    telephone_number=first(telephones),
+                    password=first(passwords)
                 )
                 user.full_clean()
                 self.assertEqual(user.telephone_prefix, prefix)
@@ -185,16 +137,16 @@ class UserModelTest(TestCase):
         for prefix in [0, 5000]:
             with transaction.atomic(), self.assertRaises(ValidationError):
                 user = User.objects.create(
-                    email=first(self.valid_emails),
+                    email=first(valid_emails),
                     telephone_prefix=prefix,
-                    telephone_number=first(self.telephones),
-                    password=first(self.passwords)
+                    telephone_number=first(telephones),
+                    password=first(passwords)
                 )
                 # we have to run validators
                 user.full_clean()
             User.objects.all().delete()
 
-    def test_phone_number_is_validated(self):
+    def test_phone_number_is_validated(self, valid_emails, passwords):
         '''
         Telephone number is a 9-length texts of digits.
         It should fail if length is different.
@@ -204,9 +156,9 @@ class UserModelTest(TestCase):
             with transaction.atomic():
                 telephone_number = ''.join(random.choices(string.digits, k=9))
                 user = User.objects.create(
-                    email=first(self.valid_emails),
+                    email=first(valid_emails),
                     telephone_number=telephone_number,
-                    password=first(self.passwords)
+                    password=first(passwords)
                 )
                 user.full_clean()
                 self.assertEqual(user.telephone_number, telephone_number)
@@ -218,50 +170,50 @@ class UserModelTest(TestCase):
             with transaction.atomic(), self.assertRaises(ValidationError):
                 telephone_number = ''.join(random.choices(string.digits, k=k))
                 user = User.objects.create(
-                    email=first(self.valid_emails),
+                    email=first(valid_emails),
                     telephone_number=telephone_number,
-                    password=first(self.passwords)
+                    password=first(passwords)
                 )
                 user.full_clean()
             User.objects.all().delete()
 
-    def test_prefix_with_phone_number_are_unique(self):
+    def test_prefix_with_phone_number_are_unique(self, telephones, valid_emails, passwords):
         '''
         Telephone number combined with prefix must be unique.
         '''
-        telephone_number = first(self.telephones)
+        telephone_number = first(telephones)
 
         # insert first
         with transaction.atomic():
             user = User.objects.create(
-                email=self.valid_emails[0],
+                email=valid_emails[0],
                 telephone_number=telephone_number,
-                password=self.passwords[0]
+                password=passwords[0]
             )
             self.assertEqual(user.telephone_number, telephone_number)
 
         # insert second time
         with transaction.atomic(), self.assertRaises(IntegrityError):
             User.objects.create(
-                email=self.valid_emails[1],
+                email=valid_emails[1],
                 telephone_number=telephone_number,
-                password=self.passwords[1]
+                password=passwords[1]
             )
 
-    def test_telephone_is_optional_for_admin(self):
+    def test_telephone_is_optional_for_admin(self, telephones, valid_emails, passwords):
         '''
         Telephone number can be empty for admin.
         '''
         # we can have admin or superuser
-        emails_iter = iter(self.valid_emails)
-        telephone_number_iter = iter(self.telephones)
+        emails_iter = iter(valid_emails)
+        telephone_number_iter = iter(telephones)
 
         for attr in ['is_superuser', 'is_staff']:
             # it runs without telephone
             with transaction.atomic():
                 o = User.objects.create(
                     email=next(emails_iter),
-                    password=first(self.passwords),
+                    password=first(passwords),
                     **{attr: True}
                 )
                 o.full_clean()
@@ -273,13 +225,13 @@ class UserModelTest(TestCase):
                 user = User.objects.create(
                     email=next(emails_iter),
                     telephone_number=telephone_number,
-                    password=first(self.passwords),
+                    password=first(passwords),
                     **{attr: True}
                 )
                 user.full_clean()
                 self.assertEqual(user.telephone_number, telephone_number)
 
-    def test_telephone_is_required_for_user(self):
+    def test_telephone_is_required_for_user(self, telephones, valid_emails, passwords):
         '''
         Telephone number is required for user.
         '''
@@ -287,31 +239,31 @@ class UserModelTest(TestCase):
         with transaction.atomic():
             with self.assertRaises(User.TelephoneError):
                 u = User.objects.create(
-                    email=first(self.valid_emails),
-                    password=first(self.passwords)
+                    email=first(valid_emails),
+                    password=first(passwords)
                 )
                 u.full_clean()
         User.objects.all().delete()
 
         # it runs with telephone
         with transaction.atomic():
-            telephone_number = first(self.telephones)
+            telephone_number = first(telephones)
             user = User.objects.create(
-                email=first(self.valid_emails),
+                email=first(valid_emails),
                 telephone_number=telephone_number,
-                password=first(self.passwords)
+                password=first(passwords)
             )
             user.full_clean()
             self.assertEqual(user.telephone_number, telephone_number)
 
-    def test_telephone_can_be_deleted(self):
+    def test_telephone_can_be_deleted(self, valid_emails, telephones, passwords):
         '''
         Admin can remove telephone of the user.
         '''
         user: User = User.objects.create(
-            email=first(self.valid_emails),
-            telephone_number=first(self.telephones),
-            password=first(self.passwords)
+            email=first(valid_emails),
+            telephone_number=first(telephones),
+            password=first(passwords)
         )
         user.telephone_number = None  # type: ignore
         user.save()
@@ -319,26 +271,26 @@ class UserModelTest(TestCase):
 
     # CREATE USER METHOD
 
-    def test_create_user_account(self):
+    def test_create_user_account(self, valid_emails, telephones):
         '''
         User account should be created using email and telephone.
         '''
-        email = first(self.valid_emails)
+        email = first(valid_emails)
         User.objects.create_user(
             email=email,
-            telephone_number=first(self.telephones)
+            telephone_number=first(telephones)
         )
         self.assertTrue(User.objects.get(email=email))
 
-    def test_create_admin_account(self):
+    def test_create_admin_account(self, valid_emails):
         '''
         Admin account should be created using only email.
         '''
         # test superuser
-        email = self.valid_emails[0]
+        email = valid_emails[0]
         User.objects.create_superuser(email=email, is_superuser=True)
         self.assertTrue(User.objects.get(email=email))
         # test admin
-        email = self.valid_emails[1]
+        email = valid_emails[1]
         User.objects.create_user(email=email, is_staff=True)
         self.assertTrue(User.objects.get(email=email))
