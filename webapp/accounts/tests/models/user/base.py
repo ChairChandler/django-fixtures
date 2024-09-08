@@ -1,5 +1,3 @@
-from email.policy import default
-from django.test import SimpleTestCase
 from django.db import models
 from django.core.validators import BaseValidator
 from typing import Any, Callable

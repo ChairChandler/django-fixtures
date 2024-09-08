@@ -9,15 +9,6 @@ from .user_manager import UserManager
 # Create your models here.
 
 
-def validate_telephone(value: 'User'):
-    "Telephone cannot not be empty for normal user."
-    is_admin = (value.is_superuser or value.is_staff)
-    if value.telephone_number is None and not is_admin:
-        raise User.TelephoneError(
-            'Telephone number cannot be empty for normal user'
-        )
-
-
 class User(AbstractUser):
     uuid = models.UUIDField(default=uuid.uuid4, primary_key=True)
     email = models.EmailField(
@@ -64,7 +55,12 @@ class User(AbstractUser):
 
     objects: UserManager = UserManager()  # type: ignore
 
+    class EmailError(ValueError):
+        "Used by signals."
+        pass
+
     class TelephoneError(ValueError):
+        "Used by signals."
         pass
 
     def get_full_name(self):
@@ -76,7 +72,3 @@ class User(AbstractUser):
     def email_user_with_status(self, subject, message, from_email=None, **kwargs) -> int:
         """Send an email to this user and return status code."""
         return send_mail(subject, message, from_email, [self.email], **kwargs)
-
-    def clean(self):
-        super().clean()
-        validate_telephone(self)
