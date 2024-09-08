@@ -1,8 +1,9 @@
+from typing import Generator
 from django.test import TestCase
 from django.core import mail
 from accounts.models import User
 from accounts.tests.fixtures_namespace import ModelFixtures
-from unittest.mock import patch
+from unittest.mock import MagicMock
 import fixture
 
 # Create your tests here.
@@ -31,7 +32,7 @@ class CreateUserTest(TestCase):
         WHEN user account is created using email and telephone
         THEN it's saved in database
         '''
-        u = User.objects.create_user(
+        User.objects.create_user(
             email=email,
             telephone_number=telephone
         )
@@ -105,7 +106,8 @@ class CreateUserTest(TestCase):
     def test_invalid_email_send(
         self,
         email: str,
-        telephone: str
+        telephone: str,
+        send_mail_mock: Generator[MagicMock, None, None]
     ):
         '''
         SCENARIO 2: Send email with password to invalid email
@@ -114,14 +116,13 @@ class CreateUserTest(TestCase):
         WHEN user account is created
         THEN it raise exception
         '''
-        with patch('accounts.models.User.email_user_with_status') as mock:
-            mock.return_value = False
-            with self.assertRaises(User.EmailError):
-                User.objects.create_user(
-                    email=email,
-                    telephone_number=telephone
-                )
-            mock.assert_called_once()
+        send_mail_mock = next(send_mail_mock)
+        with self.assertRaises(User.EmailError):
+            User.objects.create_user(
+                email=email,
+                telephone_number=telephone
+            )
+        send_mail_mock.assert_called_once()
 
 
 @fixture.use_fixture_namespace(ModelFixtures)
@@ -229,7 +230,11 @@ class CreateAdminTest(TestCase):
         self.assertEqual(mail.outbox[0].subject, 'Account created')
         self.assertIn('password', mail.outbox[0].body.lower())
 
-    def test_invalid_admin_email_send(self, email: str):
+    def test_invalid_admin_email_send(
+        self,
+        email: str,
+        send_mail_mock: Generator[MagicMock, None, None]
+    ):
         '''
         SCENARIO 3: Send email with password to invalid admin email
 
@@ -237,13 +242,16 @@ class CreateAdminTest(TestCase):
         WHEN admin account is created
         THEN it raise exception
         '''
-        with patch('accounts.models.User.email_user_with_status') as mock:
-            mock.return_value = False
-            with self.assertRaises(User.EmailError):
-                User.objects.create_user(email=email, is_staff=True)
-            mock.assert_called_once()
+        send_mail_mock = next(send_mail_mock)
+        with self.assertRaises(User.EmailError):
+            User.objects.create_user(email=email, is_staff=True)
+        send_mail_mock.assert_called_once()
 
-    def test_invalid_superuser_email_send(self, email: str):
+    def test_invalid_superuser_email_send(
+        self,
+        email: str,
+        send_mail_mock: Generator[MagicMock, None, None]
+    ):
         '''
         SCENARIO 4: Send email with password to invalid superuser email
 
@@ -251,8 +259,7 @@ class CreateAdminTest(TestCase):
         WHEN superuser account is created
         THEN it raise exception
         '''
-        with patch('accounts.models.User.email_user_with_status') as mock:
-            mock.return_value = False
-            with self.assertRaises(User.EmailError):
-                User.objects.create_superuser(email=email)
-            mock.assert_called_once()
+        send_mail_mock = next(send_mail_mock)
+        with self.assertRaises(User.EmailError):
+            User.objects.create_superuser(email=email)
+        send_mail_mock.assert_called_once()

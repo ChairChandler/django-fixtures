@@ -1,4 +1,6 @@
 from accounts.models import User
+from unittest.mock import patch
+from functools import partial
 
 
 class ModelFixtures:
@@ -21,20 +23,52 @@ class ModelFixtures:
             password=self.password,
             telephone_number=self.telephone
         )
+        
+    @property
+    def send_mail_mock(self):
+        with patch('accounts.models.User.email_user_with_status') as mock:
+            mock.return_value = False
+            yield mock
 
 
 class MethodsFixtures:
     @property
     def get_full_name(self):
-        return User.get_full_name
+        with patch('accounts.models.User') as UserMock:
+            user = UserMock()
+            user.get_username.return_value = self.email
+            
+            yield {
+                'method': partial(User.get_full_name, user), 
+                'email': self.email
+            }
 
     @property
     def get_short_name(self):
-        return User.get_short_name
+        with patch('accounts.models.User') as UserMock:
+            user = UserMock()
+            user.get_username.return_value = self.email
+
+            yield {
+                'method': partial(User.get_short_name, user),
+                'email': self.email
+            }
 
     @property
     def email_user_with_status(self):
-        return User.email_user_with_status
+        with (
+                patch('accounts.models.send_mail') as send_mail_mock,
+                patch('accounts.models.User') as UserMock,
+        ):
+            user = UserMock()
+            user.email = self.email
+            send_mail_mock.return_value = True
+            
+            yield {
+                'method': partial(User.email_user_with_status, user),
+                'send_mail': send_mail_mock,
+                'email': self.email
+            }
 
     @property
     def email(self):
