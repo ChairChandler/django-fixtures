@@ -38,7 +38,10 @@ def unknown_field_type_class(example_text):
 
 
 def test_property_field_type(property_field_type_class, example_text):
-    "When property field exists in class, then use it as fixture."
+    '''
+    WHEN property field exists in class
+    THEN use it as fixture
+    '''
     @use_fixture_namespace(property_field_type_class)
     class ExampleClass:
         def test_method(self, example):
@@ -52,7 +55,10 @@ def test_cached_property_field_type(
         cached_property_field_type_class,
         example_text
 ):
-    "When property field exists in class, then use it as fixture."
+    '''
+    WHEN property field exists in class
+    THEN use it as fixture
+    '''
     @use_fixture_namespace(cached_property_field_type_class)
     class ExampleClass:
         def test_method(self, another_example):
@@ -63,7 +69,10 @@ def test_cached_property_field_type(
 
 
 def test_unknown_field_type(unknown_field_type_class):
-    "When other field types exists in class, then do nothing with them."
+    '''
+    WHEN other field types exists in class
+    THEN do nothing with them
+    '''
     with pytest.raises(FixtureError) as e:
         @use_fixture_namespace(unknown_field_type_class)
         class ExampleClass:
@@ -72,7 +81,10 @@ def test_unknown_field_type(unknown_field_type_class):
 
 
 def test_invalid_test_method(property_field_type_class):
-    "When method in test class doesn't starts with a test name, then do nothing with it."
+    '''
+    WHEN method in test class doesn't starts with a test name
+    THEN do nothing with it
+    '''
     @use_fixture_namespace(property_field_type_class)
     class ExampleClass:
         def normal_method_name(self, example_text):
