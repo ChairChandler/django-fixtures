@@ -22,7 +22,7 @@ def property_field_type_class(example_text):
 def cached_property_field_type_class(example_text):
     class CachedPropertyFieldClass:
         @cached_property
-        def another_example(self):
+        def example(self):
             return example_text
 
     return CachedPropertyFieldClass
@@ -31,7 +31,7 @@ def cached_property_field_type_class(example_text):
 @pytest.fixture
 def unknown_field_type_class():
     class UnknownFieldClass:
-        def normal_method(self): pass
+        def example(self): pass
 
     return UnknownFieldClass
 
@@ -62,8 +62,8 @@ def test_cached_property_field_type(
     '''
     @use_fixture_namespace(cached_property_field_type_class)
     class ExampleClass:
-        def test_method(self, another_example):
-            return another_example
+        def test_method(self, example):
+            return example
 
     tests = ExampleClass()
     assert tests.test_method() == example_text  # type: ignore
@@ -72,13 +72,25 @@ def test_cached_property_field_type(
 def test_unknown_field_type(unknown_field_type_class):
     '''
     GIVEN other field types exists in class
-    WHEN doing nothing with them
-    THEN it pass
+    WHEN using it as fixture
+    THEN it raises exception
     '''
     with pytest.raises(FixtureError) as e:
         @use_fixture_namespace(unknown_field_type_class)
         class ExampleClass:
-            def test_method(self, another_example): pass
+            def test_method(self, example): pass
+
+
+def test_invalid_field_type(property_field_type_class):
+    '''
+    GIVEN property field exists in class
+    WHEN using field not existing in fixture namespace
+    THEN it raise exception
+    '''
+    with pytest.raises(FixtureError) as e:
+        @use_fixture_namespace(property_field_type_class)
+        class ExampleClass:
+            def test_method(self, not_existing_fixture): pass
 
 
 def test_invalid_test_method(property_field_type_class):

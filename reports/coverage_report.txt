@@ -3,6 +3,6 @@ Name                 Stmts   Miss  Cover   Missing
 src/__init__.py          2      0   100%
 src/base.py             26      0   100%
 tests/__init__.py        0      0   100%
-tests/base_test.py      51      0   100%
+tests/base_test.py      56      0   100%
 --------------------------------------------------
-TOTAL                   79      0   100%
+TOTAL                   84      0   100%
