@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 activate_venv() {
 	echo "Creating venv"
-	if [ ! -f .venv ]; then
-		python -m venv .venv
+	if [ ! -d .venv ]; then
+		python3 -m venv .venv
 	fi
 	echo "Activating venv"
 	source .venv/bin/activate
 	pip install pytest coverage
 }
+
 UP="$(dirname -- "$0")/.."
 
 cd "$UP" && \
