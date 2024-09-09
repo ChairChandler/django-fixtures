@@ -1,0 +1,8 @@
+.venv
+.vscode
+__pycache__
+db.sqlite3
+.coverage
+migrations
+*.sqlite3
+.*venv

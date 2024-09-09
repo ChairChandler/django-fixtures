@@ -1,0 +1,12 @@
+Name                        Stmts   Miss  Cover   Missing
+---------------------------------------------------------
+src/__init__.py                 4      0   100%
+src/class_field_test.py        16      0   100%
+src/meta_field_test.py          6      0   100%
+src/model_field_test.py        63      0   100%
+tests/__init__.py               0      0   100%
+tests/class_field_test.py      84      0   100%
+tests/meta_field_test.py       32      0   100%
+tests/model_field_test.py     173      0   100%
+---------------------------------------------------------
+TOTAL                         378      0   100%
