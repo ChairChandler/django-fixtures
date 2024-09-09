@@ -49,4 +49,4 @@ To build a package run **run_build.sh** inside **scripts** directory. It will ge
 ## Installation
 
 Being inside package base directory run
-> pip install dist/<red><package_name></red>.tar.gz
+> pip install dist/<red><package_name></red>.whl
