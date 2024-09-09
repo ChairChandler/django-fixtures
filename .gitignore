@@ -5,3 +5,4 @@ db.sqlite3
 .coverage
 migrations
 *.sqlite3
+.*venv
