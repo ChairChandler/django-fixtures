@@ -156,13 +156,24 @@ class CreateAdminTest(TestCase):
         User.objects.create_superuser(email=email)
         self.assertTrue(User.objects.get(email=email))
 
+    def test_mistake_create_superuser_account(self, email: str):
+        '''
+        SCENARIO 3: Superuser account must not be created as normal account
+        WHEN superuser account is created passing normal user flags
+        THEN it's raised exception
+        '''
+        with self.assertRaises(ValueError):
+            User.objects.create_superuser(email=email, is_staff=False)
+        with self.assertRaises(ValueError):
+            User.objects.create_superuser(email=email, is_superuser=False)
+
     def test_telephone_is_optional_for_admin(
         self,
         email: str,
         telephone: str
     ):
         '''
-        SCENARIO 3: Telephone number can be empty for admin during account creation
+        SCENARIO 4: Telephone number can be empty for admin during account creation
         WHEN admin account is created using email with telephone number
         THEN it's saved in database
         '''
@@ -179,7 +190,7 @@ class CreateAdminTest(TestCase):
         telephone: str
     ):
         '''
-        SCENARIO 4: Telephone number can be empty for superuser during account 
+        SCENARIO 5: Telephone number can be empty for superuser during account 
         creation
         WHEN superuser account is created using email with telephone number
         THEN it's saved in database
