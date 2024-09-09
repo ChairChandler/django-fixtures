@@ -1,12 +1,8 @@
 ============================= test session starts ==============================
-platform linux -- Python 3.11.6, pytest-8.3.2, pluggy-1.5.0 -- <HIDDEN>/helpers/fixtures/.venv/bin/python3.11
-cachedir: .pytest_cache
-rootdir: <HIDDEN>/helpers/fixtures
-collecting ... collected 4 items
+platform linux -- Python 3.11.6, pytest-8.3.2, pluggy-1.5.0
+rootdir: /home/alewandowski/Desktop/gitea/adam-swimmers/helpers/fixtures
+collected 4 items
 
-tests.py::test_property_field_type PASSED                                [ 25%]
-tests.py::test_cached_property_field_type PASSED                         [ 50%]
-tests.py::test_unknown_field_type PASSED                                 [ 75%]
-tests.py::test_invalid_test_method PASSED                                [100%]
+tests/base_test.py ....                                                  [100%]
 
-============================== 4 passed in 0.01s ===============================
+============================== 4 passed in 0.02s ===============================

@@ -29,10 +29,9 @@ def cached_property_field_type_class(example_text):
 
 
 @pytest.fixture
-def unknown_field_type_class(example_text):
+def unknown_field_type_class():
     class UnknownFieldClass:
-        def normal_method(self):
-            return example_text
+        def normal_method(self): pass
 
     return UnknownFieldClass
 
@@ -76,8 +75,7 @@ def test_unknown_field_type(unknown_field_type_class):
     with pytest.raises(FixtureError) as e:
         @use_fixture_namespace(unknown_field_type_class)
         class ExampleClass:
-            def test_method(self, another_example):
-                return another_example
+            def test_method(self, another_example): pass
 
 
 def test_invalid_test_method(property_field_type_class):
@@ -87,8 +85,7 @@ def test_invalid_test_method(property_field_type_class):
     '''
     @use_fixture_namespace(property_field_type_class)
     class ExampleClass:
-        def normal_method_name(self, example_text):
-            pass
+        def normal_method_name(self, example_text): pass
 
     tests = ExampleClass()
     with pytest.raises(TypeError, match='(missing argument)|(example_text)'):
