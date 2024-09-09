@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 activate_venv() {
 	echo "Creating venv"
-	if [ ! -f .test-venv ]; then
-		python -m venv .test-venv
+	if [ ! -f .venv ]; then
+		python -m venv .venv
 	fi
 	echo "Activating venv"
 	source .venv/bin/activate
