@@ -21,15 +21,23 @@ class FixtureNamespace:
     @property
     def words(self):
         return ['a', 'b', 'c']
-    @property
+
+    @cached_property
     def something(self):
             return self.words + ['d']
+    
+    @property # or @cached_property
+    @unzip
+    def mock(self):
+      with patch('path.to.Mock') as mock:
+        yield mock
 
 @use_fixture_namespace(FixtureNamespace)
 class TestClass:
-    def test_something(self, words, something):
+    def test_something(self, words, something, mock):
         assert words == ['a', 'b', 'c']
         assert something == ['a', 'b', 'c', 'd']
+        assert isinstance(mock, Mock)
 ```
 
 ## Source code
