@@ -1,6 +1,7 @@
 import pytest
 from functools import cached_property
 from src import use_fixture_namespace, FixtureError
+from src.unzip import unzip
 
 
 @pytest.fixture
@@ -36,6 +37,22 @@ def unknown_field_type_class():
     return UnknownFieldClass
 
 
+@pytest.fixture
+def property_field_unzip_marked(example_text):
+    class PropertyFieldClass:
+        @property
+        @unzip
+        def example(self):
+            yield example_text
+
+        @cached_property
+        @unzip
+        def example_cache(self):
+            yield example_text
+
+    return PropertyFieldClass
+
+
 def test_property_field_type(property_field_type_class, example_text):
     '''
     GIVEN property field exists in class
@@ -48,6 +65,7 @@ def test_property_field_type(property_field_type_class, example_text):
             return example
 
     tests = ExampleClass()
+    # arguments already injected
     assert tests.test_method() == example_text  # type: ignore
 
 
@@ -106,3 +124,32 @@ def test_invalid_test_method(property_field_type_class):
     tests = ExampleClass()
     with pytest.raises(TypeError, match='(missing argument)|(example_text)'):
         tests.normal_method_name()  # type: ignore
+
+
+def test_property_marked_using_unzip(property_field_unzip_marked):
+    '''
+    GIVEN property field in class marked with unzip decorator
+    WHEN check if property has 'unzip' attribute
+    THEN result is True
+    '''
+    assert hasattr(property_field_unzip_marked.example.fget, 'unzip')
+    assert hasattr(property_field_unzip_marked.example_cache.func, 'unzip')
+
+
+def test_unzip_marked_property(property_field_unzip_marked, example_text):
+    '''
+    GIVEN property field in class marked with unzip decorator
+    WHEN injecting this field
+    THEN field is injected with yield value
+    '''
+    @use_fixture_namespace(property_field_unzip_marked)
+    class ExampleClass:
+        def test_method(self, example):
+            return example
+
+        def test_method_cache(self, example_cache):
+            return example_cache
+
+    tests = ExampleClass()
+    assert tests.test_method() == example_text  # type: ignore
+    assert tests.test_method_cache() == example_text  # type: ignore

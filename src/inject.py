@@ -47,17 +47,44 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
         fixtures_getters = {
             # property name: getter
             # name=name means assign current reference value
-            # anonymous function allows to get the latest propety value
-            name: (lambda name=name: getattr(namespace_object, name))
-            for (name, _) in [
+            # anonymous function allows to get the latest property value
+            #
+            #
+            # FOR @property
+            **{
+                name: (
+                    # if property (method in class) is marked using unzip,
+                    # then unpack it
+                    lambda name=name: next(getattr(namespace_object, name))
+                    # how to get access
+                    # @property: <class>.<method>.fget.unzip
+                    if hasattr(getattr(NamespaceClass, name).fget, 'unzip')
+                    # else just get value
+                    else getattr(namespace_object, name)
+                )
                 # get @property methods
-                *inspect.getmembers(NamespaceClass, inspect.isdatadescriptor),
-                # get @cached_property methods
-                *inspect.getmembers(NamespaceClass, inspect.ismethoddescriptor)
-            ]
-            # remove from query set hidden or protected properties
-            if not name.startswith('_')
+                for (name, _) in inspect.getmembers(NamespaceClass, inspect.isdatadescriptor)
+                # remove from query set hidden or protected properties
+                if not name.startswith('_')
+            },
+            # FOR @cached_property
+            **{
+                name: (
+                    # if property (method in class) is marked using unzip,
+                    # then unpack it
+                    lambda name=name: next(getattr(namespace_object, name))
+                    # how to get access
+                    # @cached_property: <class>.<method>.func.unzip
+                    if hasattr(getattr(NamespaceClass, name).func, 'unzip')
+                    # else just get value
+                    else getattr(namespace_object, name)
+                )
+                for (name, _) in inspect.getmembers(NamespaceClass, inspect.ismethoddescriptor)
+                # remove from query set hidden or protected properties
+                if not name.startswith('_')
+            }
         }
+
         # get methods with names from desired class
         test_methods = [
             (fname, func)
@@ -86,7 +113,11 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
             @wraps(func)
             def injector(*args, func=func, fix_map=fix_map, **kwargs):
                 # unpack fixtures values from properties
-                prepared = {n: v() for n, v in fix_map.items() if v}
+                prepared = {
+                    fixture_name: getter()
+                    for fixture_name, getter in fix_map.items()
+                    if getter
+                }
                 kwargs.update(prepared)
                 # run function with fixtures
                 return func(*args, **kwargs)
