@@ -53,6 +53,24 @@ def property_field_unzip_marked(example_text):
     return PropertyFieldClass
 
 
+@pytest.fixture
+def property_field_loading_in_order():
+    class PropertyFieldClass:
+        msg = []
+
+        @property
+        def value_2(self):
+            PropertyFieldClass.msg.append('BEFORE')
+            return PropertyFieldClass.msg.copy()
+
+        @property
+        def value_1(self):
+            PropertyFieldClass.msg.append('AFTER')
+            return PropertyFieldClass.msg.copy()
+
+    return PropertyFieldClass
+
+
 def test_property_field_type(property_field_type_class, example_text):
     '''
     GIVEN property field exists in class
@@ -153,3 +171,27 @@ def test_unzip_marked_property(property_field_unzip_marked, example_text):
     tests = ExampleClass()
     assert tests.test_method() == example_text  # type: ignore
     assert tests.test_method_cache() == example_text  # type: ignore
+
+
+def test_loading_in_order(property_field_loading_in_order):
+    '''
+    GIVEN property fields in class
+    WHEN injecting fields
+    THEN fields injected in order by class definition
+    '''
+    @use_fixture_namespace(property_field_loading_in_order)
+    class ExampleClass:
+        def test_1(self, value_1, value_2):
+            return value_2, value_1
+
+        def test_2(self, value_2, value_1):
+            return value_2, value_1
+
+    tests = ExampleClass()
+
+    args = tests.test_1()  # type: ignore
+    assert args == (['BEFORE'], ['BEFORE', 'AFTER'])
+
+    args = tests.test_2()  # type: ignore
+    assert args == (['BEFORE', 'AFTER', 'BEFORE'], [
+                    'BEFORE', 'AFTER', 'BEFORE', 'AFTER'])

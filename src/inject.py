@@ -11,6 +11,46 @@ class FixtureError(KeyError):
     pass
 
 
+def getmembers_unsorted(object, predicates: list):
+    # http://192.168.2.1:3000/alewandowski/django-fixtures/issues/4
+    return [
+        (name, member)
+        for (name, member) in object.__dict__.items()
+        if any(p(member) for p in predicates)
+    ]
+
+
+def create_getter(namespace_class, namespace_object, property_name, property):
+    # check if @property
+    if inspect.isdatadescriptor(property):
+        accessor = 'fget'
+    # check if @cached_property
+    elif inspect.ismethoddescriptor(property):
+        accessor = 'func'
+    else:
+        raise ValueError('Invalid method')
+
+    # how to get access to unzip attribute
+    # @property: <class>.<method>.fget.unzip
+    # @cached_property: <class>.<method>.func.unzip
+    A = getattr(namespace_class, property_name)
+    A = getattr(A, accessor)
+
+    if hasattr(A, 'unzip'):
+        # if property (method in class) is marked using unzip,
+        # then unpack it
+        return (
+            lambda name=property_name:
+                next(getattr(namespace_object, name))
+        )
+    else:
+        # else just get value
+        return (
+            lambda name=property_name:
+                getattr(namespace_object, name)
+        )
+
+
 def use_fixture_namespace(NamespaceClass: Type) -> Callable:
     '''
     Injects fixture into methods arguments from class properties.
@@ -48,41 +88,14 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
             # property name: getter
             # name=name means assign current reference value
             # anonymous function allows to get the latest property value
-            #
-            #
-            # FOR @property
-            **{
-                name: (
-                    # if property (method in class) is marked using unzip,
-                    # then unpack it
-                    lambda name=name: next(getattr(namespace_object, name))
-                    # how to get access
-                    # @property: <class>.<method>.fget.unzip
-                    if hasattr(getattr(NamespaceClass, name).fget, 'unzip')
-                    # else just get value
-                    else getattr(namespace_object, name)
-                )
-                # get @property methods
-                for (name, _) in inspect.getmembers(NamespaceClass, inspect.isdatadescriptor)
-                # remove from query set hidden or protected properties
-                if not name.startswith('_')
-            },
-            # FOR @cached_property
-            **{
-                name: (
-                    # if property (method in class) is marked using unzip,
-                    # then unpack it
-                    lambda name=name: next(getattr(namespace_object, name))
-                    # how to get access
-                    # @cached_property: <class>.<method>.func.unzip
-                    if hasattr(getattr(NamespaceClass, name).func, 'unzip')
-                    # else just get value
-                    else getattr(namespace_object, name)
-                )
-                for (name, _) in inspect.getmembers(NamespaceClass, inspect.ismethoddescriptor)
-                # remove from query set hidden or protected properties
-                if not name.startswith('_')
-            }
+            name: create_getter(NamespaceClass, namespace_object, name, method)
+            # get @property and @cached_property methods
+            for (name, method) in getmembers_unsorted(NamespaceClass, [
+                inspect.isdatadescriptor,
+                inspect.ismethoddescriptor
+            ])
+            # remove from query set hidden or protected properties
+            if not name.startswith('_')
         }
 
         # get methods with names from desired class
@@ -100,12 +113,21 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
             func_args_names = inspect.getargs(func.__code__)
             func_args_names = func_args_names.args
             func_args_names = filter(lambda x: x != 'self', func_args_names)
+            func_args_names = list(func_args_names)
 
             # set values for fixtures to be used in injector
-            try:
-                fix_map = {a: fixtures_getters[a] for a in func_args_names}
-            except KeyError as e:
-                raise FixtureError('Fixture does not exists') from e
+            fix_map = {
+                prop_name: getter
+                # we have to iterate over namespace class to have
+                # exactly the same order of injecting properties
+                # from top to bottom
+                for (prop_name, getter) in fixtures_getters.items()
+                if prop_name in func_args_names
+            }
+            # get needed fixtures not existed in namespace class
+            needed_fixtures = set(func_args_names) - set(fix_map)
+            if len(needed_fixtures):
+                raise FixtureError('Fixture does not exists')
 
             # create wrapper for function
             # copy values from function to nested function
