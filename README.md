@@ -12,7 +12,7 @@ Injects fixture into methods arguments from class properties a.k.a namespace.
 
 Namespace is a class designed to be build on top of properties, `@property` and `@cached_property` annotated methods.
 
-To inject fixtures in a test class, methods in a test class must starts with a `test` name.
+To inject fixtures in a test class, methods in a test class must starts with a `test` name. Fixtures are loaded in namespace class definition order.
 
 Example:
 
