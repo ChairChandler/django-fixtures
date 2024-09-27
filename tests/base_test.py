@@ -1,3 +1,4 @@
+from unittest.mock import Mock, patch
 import pytest
 from functools import cached_property
 from src import use_fixture_namespace, FixtureError
@@ -67,6 +68,28 @@ def property_field_loading_in_order():
         def value_1(self):
             PropertyFieldClass.msg.append('AFTER')
             return PropertyFieldClass.msg.copy()
+
+    return PropertyFieldClass
+
+
+@pytest.fixture
+def property_field_generators():
+    class PropertyFieldClass:
+        @property
+        @unzip
+        def example_gen_unzip(self):
+            PropertyFieldClass.gen_unzip = Mock(name='example_gen_unzip')
+            # required for next(mock) to work
+            PropertyFieldClass.gen_unzip.return_value = iter([])
+            PropertyFieldClass.gen_unzip.__next__ = Mock()
+            return PropertyFieldClass.gen_unzip
+
+        @property
+        def example_gen(self):
+            PropertyFieldClass.gen = Mock(name='example_gen')
+            PropertyFieldClass.gen.return_value = iter([])
+            PropertyFieldClass.gen.__next__ = Mock()
+            return PropertyFieldClass.gen
 
     return PropertyFieldClass
 
@@ -195,3 +218,26 @@ def test_loading_in_order(property_field_loading_in_order):
     args = tests.test_2()  # type: ignore
     assert args == (['BEFORE', 'AFTER', 'BEFORE'], [
                     'BEFORE', 'AFTER', 'BEFORE', 'AFTER'])
+
+
+# isinstance(mock, Generator) => True
+@patch('src.inject.isinstance', return_value=True)
+@patch('src.inject.inspect.isdatadescriptor', return_value=True)
+@patch('src.inject.inspect.ismethoddescriptor', return_value=True)
+def test_generators_closed(_ismethod, _isdata, _isinstance, property_field_generators):
+    '''
+    GIVEN property fields in class with yields
+    WHEN injecting fields
+    THEN generators closed after test
+    '''
+    @use_fixture_namespace(property_field_generators)
+    class ExampleClass:
+        def test_1(self, example_gen_unzip, example_gen):
+            pass
+
+    ExampleClass().test_1()  # type: ignore
+    # unzip must be called once and then closed
+    property_field_generators.gen_unzip.__next__.assert_called()
+    property_field_generators.gen_unzip.close.assert_called()
+    # normal generator just be closed
+    property_field_generators.gen.close.assert_called()
