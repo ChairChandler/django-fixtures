@@ -1,5 +1,5 @@
 import inspect
-from typing import Type, Callable
+from typing import Iterable, Type, Callable
 from functools import wraps
 
 # I can't mix pytest fixtures with Django tests easily, I would like also
@@ -8,7 +8,14 @@ from functools import wraps
 
 
 class FixtureError(KeyError):
-    pass
+    def __init__(self, msg: str, fixtures: Iterable[str]) -> None:
+        super().__init__(msg)
+        self.msg = msg
+        self.fixtures = fixtures
+
+    def __str__(self) -> str:
+        fix_str = r'\n-'.join([fix for fix in self.fixtures])
+        return f'{self.msg}: \n-{fix_str}'
 
 
 def getmembers_unsorted(object, predicates: list):
@@ -127,7 +134,7 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
             # get needed fixtures not existed in namespace class
             needed_fixtures = set(func_args_names) - set(fix_map)
             if len(needed_fixtures):
-                raise FixtureError('Fixture does not exists')
+                raise FixtureError('Fixtures does not exists', needed_fixtures)
 
             # create wrapper for function
             # copy values from function to nested function
