@@ -1,6 +1,6 @@
 import inspect
-from typing import Iterable, Type, Callable
-from functools import wraps
+from typing import Generator, Iterable, NotRequired, Type, Callable, TypeVar, TypedDict
+from functools import cached_property, wraps
 
 # I can't mix pytest fixtures with Django tests easily, I would like also
 # to avoid Django fixtures files, so decided to use manual objects access
@@ -27,7 +27,20 @@ def getmembers_unsorted(object, predicates: list):
     ]
 
 
-def create_getter(namespace_class, namespace_object, property_name, property):
+T = TypeVar('T')
+
+
+class GetterInfo(TypedDict):
+    value: object
+    generator: Generator[object, None, None] | None
+
+
+def create_getter(
+    namespace_class: Type[T],
+    namespace_object: T,
+    property_name: str,
+    property: property | cached_property
+) -> Callable[[], GetterInfo]:
     # check if @property
     if inspect.isdatadescriptor(property):
         accessor = 'fget'
@@ -47,14 +60,19 @@ def create_getter(namespace_class, namespace_object, property_name, property):
         # if property (method in class) is marked using unzip,
         # then unpack it
         return (
-            lambda name=property_name:
-                next(getattr(namespace_object, name))
+            lambda name=property_name: {
+                # walrus operator var := val
+                'generator': (generator := getattr(namespace_object, name)),
+                'value': next(generator)
+            }
         )
     else:
         # else just get value
         return (
-            lambda name=property_name:
-                getattr(namespace_object, name)
+            lambda name=property_name: {
+                'value': (value := getattr(namespace_object, name)),
+                'generator': value if isinstance(value, Generator) else None
+            }
         )
 
 
@@ -142,14 +160,25 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
             @wraps(func)
             def injector(*args, func=func, fix_map=fix_map, **kwargs):
                 # unpack fixtures values from properties
-                prepared = {
+                prepared: dict[str, GetterInfo] = {
                     fixture_name: getter()
                     for fixture_name, getter in fix_map.items()
                     if getter
                 }
-                kwargs.update(prepared)
+                # add only values (omit generators)
+                only_values = {
+                    k: v['value']
+                    for k, v in prepared.items()
+                }
+                kwargs.update(only_values)
                 # run function with fixtures
-                return func(*args, **kwargs)
+                ret_val = func(*args, **kwargs)
+                # cleanup generators (important for memory leakage)
+                for getter_info in prepared.values():
+                    if getter_info['generator']:
+                        getter_info['generator'].close()
+
+                return ret_val
 
             # inject function with fixtures
             setattr(InjectionClass, fname, injector)
