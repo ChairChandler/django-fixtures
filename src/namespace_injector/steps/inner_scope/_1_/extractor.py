@@ -1,6 +1,6 @@
 from typing import Callable
 
-from src.steps.outer_scope._1_.create_getter import GetterInfo
+from src.namespace_injector.steps.outer_scope._1_.create_getter import GetterInfo
 
 
 def extract_fixtures(fix_maping: dict[str, Callable]) -> dict[str, GetterInfo]:

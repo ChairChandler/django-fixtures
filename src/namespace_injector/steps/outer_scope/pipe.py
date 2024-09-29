@@ -16,8 +16,8 @@ T = TypeVar('T')
 
 def inject_fixtures(
     NamespaceClass: Type,
-    InjectionClass: T
-) -> T:
+    InjectionClass: Type[T]
+) -> Type[T]:
     "Inject fixtures to every `test` method of `InjectionClass`."
     # create object class to get access to properties
     namespace_object = NamespaceClass()
@@ -28,7 +28,7 @@ def inject_fixtures(
         namespace_object
     )
     # get methods with names from desired class
-    test_methods = extract_tests_methods(NamespaceClass)
+    test_methods = extract_tests_methods(InjectionClass)
 
     # make fixture injections for every test method
     for (fname, func) in test_methods:

@@ -235,10 +235,10 @@ def test_loading_in_order(property_field_loading_in_order):
 
 
 # isinstance(mock, Generator) => True
-@patch('src.inject.isinstance', return_value=True)
-@patch('src.inject.inspect.isdatadescriptor', return_value=True)
-@patch('src.inject.inspect.ismethoddescriptor', return_value=True)
-def test_generators_closed(_ismethod, _isdata, _isinstance, property_field_generators):
+@patch('src.namespace_injector.steps.outer_scope._1_.create_getter.isinstance', return_value=True)
+@patch('src.namespace_injector.steps.outer_scope._1_.builder.inspect.isdatadescriptor', return_value=True)
+@patch('src.namespace_injector.steps.outer_scope._1_.builder.inspect.ismethoddescriptor', return_value=True)
+def test_generators_closed(_isinstance, _isdata, _ismethod, property_field_generators):
     '''
     GIVEN property fields in class with yields
     WHEN injecting fields

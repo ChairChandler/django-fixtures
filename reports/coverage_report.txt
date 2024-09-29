@@ -1,10 +1,34 @@
-Name                 Stmts   Miss  Cover   Missing
---------------------------------------------------
-src/__init__.py          4      0   100%
-src/inject.py           58      3    95%   19-20, 53
-src/state.py            21      0   100%
-src/unzip.py             4      0   100%
-tests/__init__.py        0      0   100%
-tests/base_test.py     156      0   100%
---------------------------------------------------
-TOTAL                  243      3    99%
+Name                                                                  Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------------------------------------
+src/__init__.py                                                           5      0   100%
+src/error.py                                                              9      2    78%   11-12
+src/namespace_injector/__init__.py                                        2      0   100%
+src/namespace_injector/injector.py                                        5      0   100%
+src/namespace_injector/steps/inner_scope/_1_/__init__.py                  2      0   100%
+src/namespace_injector/steps/inner_scope/_1_/extractor.py                 4      0   100%
+src/namespace_injector/steps/inner_scope/_2_/__init__.py                  2      0   100%
+src/namespace_injector/steps/inner_scope/_2_/extractor.py                 3      0   100%
+src/namespace_injector/steps/inner_scope/_3_/__init__.py                  2      0   100%
+src/namespace_injector/steps/inner_scope/_3_/cleanup.py                   6      0   100%
+src/namespace_injector/steps/inner_scope/__init__.py                      2      0   100%
+src/namespace_injector/steps/inner_scope/pipe.py                         15      0   100%
+src/namespace_injector/steps/outer_scope/_1_/__init__.py                  3      0   100%
+src/namespace_injector/steps/outer_scope/_1_/builder.py                   7      0   100%
+src/namespace_injector/steps/outer_scope/_1_/create_getter.py            18      1    94%   27
+src/namespace_injector/steps/outer_scope/_1_/getmembers_unsorted.py       2      0   100%
+src/namespace_injector/steps/outer_scope/_2_/__init__.py                  2      0   100%
+src/namespace_injector/steps/outer_scope/_2_/extractor.py                 4      0   100%
+src/namespace_injector/steps/outer_scope/_3_/__init__.py                  2      0   100%
+src/namespace_injector/steps/outer_scope/_3_/extractor.py                 8      0   100%
+src/namespace_injector/steps/outer_scope/_4_/__init__.py                  2      0   100%
+src/namespace_injector/steps/outer_scope/_4_/filter.py                    2      0   100%
+src/namespace_injector/steps/outer_scope/_5_/__init__.py                  2      0   100%
+src/namespace_injector/steps/outer_scope/_5_/verify.py                    6      0   100%
+src/namespace_injector/steps/outer_scope/__init__.py                      2      0   100%
+src/namespace_injector/steps/outer_scope/pipe.py                         21      0   100%
+src/state.py                                                             21      0   100%
+src/unzip.py                                                              4      0   100%
+tests/__init__.py                                                         0      0   100%
+tests/base_test.py                                                      156      0   100%
+---------------------------------------------------------------------------------------------------
+TOTAL                                                                   319      3    99%
