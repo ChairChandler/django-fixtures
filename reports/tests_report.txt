@@ -3,6 +3,52 @@ platform linux -- Python 3.11.6, pytest-8.3.2, pluggy-1.5.0
 rootdir: /home/alewandowski/Desktop/gitea/django-fixtures
 collected 10 items
 
-tests/base_test.py ..........                                            [100%]
+tests/base_test.py ........F.                                            [100%]
 
-============================== 10 passed in 0.06s ==============================
+=================================== FAILURES ===================================
+____________________________ test_generators_closed ____________________________
+
+_ismethod = <MagicMock name='ismethoddescriptor' id='129041645132944'>
+_isdata = <MagicMock name='isdatadescriptor' id='129041645302352'>
+_isinstance = <MagicMock name='isinstance' id='129041645339984'>
+property_field_generators = <class 'tests.base_test.property_field_generators.<locals>.PropertyFieldClass'>
+
+    @patch('src.inject.isinstance', return_value=True)
+    @patch('src.inject.inspect.isdatadescriptor', return_value=True)
+    @patch('src.inject.inspect.ismethoddescriptor', return_value=True)
+    def test_generators_closed(_ismethod, _isdata, _isinstance, property_field_generators):
+        '''
+        GIVEN property fields in class with yields
+        WHEN injecting fields
+        THEN generators closed after test
+        '''
+        @use_fixture_namespace(property_field_generators)
+        class ExampleClass:
+            def test_1(self, example_gen_unzip, example_gen):
+                pass
+    
+        ExampleClass().test_1()  # type: ignore
+        # unzip must be called once and then closed
+        property_field_generators.gen_unzip.__next__.assert_called()
+        property_field_generators.gen_unzip.close.assert_called()
+        # normal generator just be closed
+>       property_field_generators.gen.close.assert_called()
+
+tests/base_test.py:257: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Mock name='example_gen.close' id='129041663130896'>
+
+    def assert_called(self):
+        """assert that the mock was called at least once
+        """
+        if self.call_count == 0:
+            msg = ("Expected '%s' to have been called." %
+                   (self._mock_name or 'mock'))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'close' to have been called.
+
+/usr/lib/python3.11/unittest/mock.py:908: AssertionError
+=========================== short test summary info ============================
+FAILED tests/base_test.py::test_generators_closed - AssertionError: Expected ...
+========================= 1 failed, 9 passed in 0.17s ==========================
