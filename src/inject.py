@@ -170,9 +170,10 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
                     k: v['value']
                     for k, v in prepared.items()
                 }
-                kwargs.update(only_values)
+                # fixtures has lower priority than default test arguments
+                only_values.update(kwargs)
                 # run function with fixtures
-                ret_val = func(*args, **kwargs)
+                ret_val = func(*args, **only_values)
                 # cleanup generators (important for memory leakage)
                 for getter_info in prepared.values():
                     if getter_info['generator']:
