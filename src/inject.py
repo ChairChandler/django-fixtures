@@ -1,6 +1,8 @@
 import inspect
-from typing import Generator, Iterable, NotRequired, Type, Callable, TypeVar, TypedDict
+from typing import Generator, Iterable, Type, Callable, TypeVar, TypedDict
 from functools import cached_property, wraps
+
+from .state import FunctionBackup
 
 # I can't mix pytest fixtures with Django tests easily, I would like also
 # to avoid Django fixtures files, so decided to use manual objects access
@@ -105,6 +107,7 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
     '''
     # create object class to get access to properties
     namespace_object = NamespaceClass()
+    backup = FunctionBackup()
 
     def inject_fixtures(InjectionClass: Type) -> Type:
         "Inject fixtures to every `test` method of `InjectionClass`."
@@ -180,6 +183,10 @@ def use_fixture_namespace(NamespaceClass: Type) -> Callable:
                         getter_info['generator'].close()
 
                 return ret_val
+
+            # save original function for retrieval/backup
+            # method in class has different code, but identical signature
+            backup.save(func)
 
             # inject function with fixtures
             setattr(InjectionClass, fname, injector)
