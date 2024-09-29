@@ -1,8 +1,7 @@
 from unittest.mock import Mock, patch
 import pytest
 from functools import cached_property
-from src import use_fixture_namespace, FixtureError
-from src.unzip import unzip
+from src import *
 
 
 @pytest.fixture
@@ -11,11 +10,26 @@ def example_text():
 
 
 @pytest.fixture
+def another_text():
+    return 'example'
+
+
+@pytest.fixture
 def property_field_type_class(example_text):
     class PropertyFieldClass:
         @property
         def example(self):
             return example_text
+
+    return PropertyFieldClass
+
+
+@pytest.fixture
+def another_field_type_class(another_text):
+    class PropertyFieldClass:
+        @property
+        def example(self):
+            return another_text
 
     return PropertyFieldClass
 
@@ -241,3 +255,27 @@ def test_generators_closed(_ismethod, _isdata, _isinstance, property_field_gener
     property_field_generators.gen_unzip.close.assert_called()
     # normal generator just be closed
     property_field_generators.gen.close.assert_called()
+
+
+def test_backup_original_func(
+        property_field_type_class,
+        example_text,
+        another_field_type_class,
+        another_text):
+    '''
+    GIVEN similar namespaces with different return values
+    WHEN using it as fixture for two different test classes
+    AND second test class copy methods from first test class
+    THEN tests return values are different
+    '''
+    @use_fixture_namespace(property_field_type_class)
+    class ExampleClass:
+        def test_method(self, example):
+            return example
+
+    @use_fixture_namespace(another_field_type_class)
+    class CopyClass:
+        test_copy = func_copy(ExampleClass.test_method)
+
+    assert ExampleClass().test_method() == example_text  # type: ignore
+    assert CopyClass().test_copy() == another_text  # type: ignore

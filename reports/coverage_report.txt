@@ -1,9 +1,10 @@
 Name                 Stmts   Miss  Cover   Missing
 --------------------------------------------------
-src/__init__.py          3      0   100%
-src/inject.py           55      3    95%   17-18, 51
+src/__init__.py          4      0   100%
+src/inject.py           58      3    95%   19-20, 53
+src/state.py            21      0   100%
 src/unzip.py             4      0   100%
 tests/__init__.py        0      0   100%
-tests/base_test.py     137      0   100%
+tests/base_test.py     156      0   100%
 --------------------------------------------------
-TOTAL                  199      3    98%
+TOTAL                  243      3    99%
