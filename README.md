@@ -16,6 +16,8 @@ To inject fixtures in a test class, methods in a test class must starts with a `
 
 `@unzip` decorator allows to load generator/mock directly without calling `next(mock)` on it. All generators (marked with **unzip** or without) are automatically closed after test is done.
 
+Tests can be copy without worries, as fixtures has lower priority than function arguments.
+
 Example:
 
 ```python
