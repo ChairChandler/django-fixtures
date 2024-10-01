@@ -35,33 +35,48 @@ def func_copy(original_func: Callable, map_args: dict[str, str] = {}):
     ```
     '''
 
+    # test self
+    if 'self' in map_args.keys() or 'self' in map_args.values():
+        raise ValueError('Cannot rename to/from self arg')
+
     def get_function(replace_function: Callable):
         retrieved = FunctionBackup().get(original_func)
 
         # get function meta information
-        signature = inspect.signature(retrieved)
+        original_signature = inspect.signature(retrieved)
 
         @wraps(
             replace_function,
             assigned=("__module__", "__name__", "__qualname__", "__doc__")
         )
         def wrapped(*args, **kwargs):
-            print(args)
-            print(kwargs)
+            for name_old, name_new in map_args.items():
+                if name_new in kwargs:
+                    value = kwargs.pop(name_new)
+                    kwargs[name_old] = value
+                else:
+                    raise ValueError('Argument name does not exists')
+
             # assign arguments
-            bound_args = signature.bind_partial(*args, **kwargs)
-
-            # rename arguments names
-            for old_arg, new_arg in map_args.items():
-                if old_arg in bound_args.arguments:
-                    value = bound_args.arguments.pop(old_arg)
-                    bound_args.arguments[new_arg] = value
-
+            bound_args = original_signature.bind_partial(*args, **kwargs)
             return retrieved(**bound_args.arguments)
 
-        # get function meta information
-        signature = inspect.signature(wrapped)
-        setattr(wrapped, '__signature__', signature)
+        # rename arguments names
+        new_parameters = []
+        for name, param in original_signature.parameters.items():
+            if name in map_args:
+                new_name = map_args[name]
+                param = inspect.Parameter(
+                    name=new_name,
+                    kind=inspect.Parameter.POSITIONAL_OR_KEYWORD
+                )
+
+            new_parameters.append(param)
+
+        # create new signature
+        wrapped_signature = inspect.Signature(new_parameters)
+
+        setattr(wrapped, '__signature__', wrapped_signature)
         return wrapped
 
     return get_function

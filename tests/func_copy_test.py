@@ -1,10 +1,9 @@
 from unittest.mock import sentinel
 import pytest
-import pytest_cases
 from src import *
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def namespace():
     class Namespace:
         @property
@@ -47,34 +46,40 @@ def namespace():
 #
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def base_zero_args(namespace):
-    @use_fixture_namespace(namespace)
-    class BaseTest:
-        def test_example(self):
-            return sentinel.DEFAULT
+    def builder():
+        @use_fixture_namespace(namespace)
+        class BaseTest:
+            def test_example(self):
+                return sentinel.DEFAULT
 
-    return BaseTest
+        return BaseTest
+    return builder
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def base_one_arg(namespace):
-    @use_fixture_namespace(namespace)
-    class BaseTest:
-        def test_example(self, arg):
-            return arg
+    def builder():
+        @use_fixture_namespace(namespace)
+        class BaseTest:
+            def test_example(self, arg):
+                return arg
 
-    return BaseTest
+        return BaseTest
+    return builder
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def base_many_args(namespace):
-    @use_fixture_namespace(namespace)
-    class BaseTest:
-        def test_example(self, arg_1, arg_2):
-            return arg_1, arg_2
+    def builder():
+        @use_fixture_namespace(namespace)
+        class BaseTest:
+            def test_example(self, arg_1, arg_2):
+                return arg_1, arg_2
 
-    return BaseTest
+        return BaseTest
+    return builder
 
 #
 #
@@ -83,13 +88,13 @@ def base_many_args(namespace):
 #
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_zero_arg(namespace, base_zero_args):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_zero_args.test_example
+                base_zero_args().test_example
             )
             def test_copy(self): pass
 
@@ -97,13 +102,13 @@ def copy_zero_arg(namespace, base_zero_args):
     return build
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_zero_arg_non_existing(namespace, base_zero_args):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_zero_args.test_example,
+                base_zero_args().test_example,
                 map_args={'non_existing_arg': 'new_name'}
             )
             def test_copy(self): pass
@@ -112,13 +117,13 @@ def copy_zero_arg_non_existing(namespace, base_zero_args):
     return build
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_zero_arg_self(namespace, base_zero_args):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_zero_args.test_example,
+                base_zero_args().test_example,
                 map_args={'self': 'new_name'}
             )
             def test_copy(self): pass
@@ -133,13 +138,13 @@ def copy_zero_arg_self(namespace, base_zero_args):
 #
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_one_arg(namespace, base_one_arg):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_one_arg.test_example
+                base_one_arg().test_example
             )
             def test_copy(self): pass
 
@@ -147,13 +152,13 @@ def copy_one_arg(namespace, base_one_arg):
     return build
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_one_arg_non_existing(namespace, base_one_arg):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_one_arg.test_example,
+                base_one_arg().test_example,
                 map_args={'non_existing_arg': 'new_name'}
             )
             def test_copy(self): pass
@@ -162,13 +167,13 @@ def copy_one_arg_non_existing(namespace, base_one_arg):
     return build
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_one_arg_rename(namespace, base_one_arg):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_one_arg.test_example,
+                base_one_arg().test_example,
                 map_args={'arg': 'new_name'}
             )
             def test_copy(self): pass
@@ -177,13 +182,13 @@ def copy_one_arg_rename(namespace, base_one_arg):
     return build
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_one_arg_self(namespace, base_one_arg):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_one_arg.test_example,
+                base_one_arg().test_example,
                 map_args={'self': 'new_name'}
             )
             def test_copy(self): pass
@@ -199,13 +204,13 @@ def copy_one_arg_self(namespace, base_one_arg):
 #
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_many_args(namespace, base_many_args):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_many_args.test_example
+                base_many_args().test_example
             )
             def test_copy(self): pass
 
@@ -213,13 +218,13 @@ def copy_many_args(namespace, base_many_args):
     return build
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_many_args_non_existing(namespace, base_many_args):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_many_args.test_example,
+                base_many_args().test_example,
                 map_args={'non_existing_arg': 'new_name'}
             )
             def test_copy(self): pass
@@ -228,13 +233,13 @@ def copy_many_args_non_existing(namespace, base_many_args):
     return build
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_many_args_self(namespace, base_many_args):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_many_args.test_example,
+                base_many_args().test_example,
                 map_args={'self': 'new_name'}
             )
             def test_copy(self): pass
@@ -243,13 +248,13 @@ def copy_many_args_self(namespace, base_many_args):
     return build
 
 
-@pytest_cases.fixture
+@pytest.fixture
 def copy_many_args_rename(namespace, base_many_args):
     def build():
         @use_fixture_namespace(namespace)
         class CopyTest:
             @func_copy(
-                base_many_args.test_example,
+                base_many_args().test_example,
                 map_args={'arg_1': 'new_name_1', 'arg_2': 'new_name_2'}
             )
             def test_copy(self): pass
@@ -264,12 +269,11 @@ def copy_many_args_rename(namespace, base_many_args):
 #
 
 
-@pytest_cases.parametrize('builder', [
+def test_base_copy(
     copy_zero_arg,
     copy_one_arg,
     copy_many_args
-])
-def test_base_copy(builder):
+):
     '''
     GIVEN class X with test_method_x
     AND class Y with test_method_y
@@ -278,74 +282,76 @@ def test_base_copy(builder):
     THEN inject X.test_method_x code into Y.test_method_y method
     AND default values keep 
     '''
-    instance = builder()
-    # Sprawdzenie, czy test_copy w Y wywołuje test_example z X
-    if hasattr(instance, 'test_copy'):
-        result = instance.test_copy()
-        assert result == sentinel.DEFAULT
-
-    # Sprawdzenie, czy domyślne wartości są zachowane
-    if hasattr(instance, 'test_example'):
-        assert instance.test_example() == sentinel.DEFAULT
+    assert copy_zero_arg().test_copy() == sentinel.DEFAULT
+    assert copy_one_arg().test_copy() == sentinel.ARG
+    assert copy_many_args().test_copy() == (sentinel.ARG_1, sentinel.ARG_2)
 
 
-# @pytest_cases.parametrize('instance', [
-#     copy_one_arg_rename,
-#     copy_many_args_rename
-# ])
-# def test_copy_with_rename(instance):
-#     '''
-#     GIVEN class X with test_method_x
-#     AND class Y with test_method_y
-#     AND X.test_method_x can have default values
-#     WHEN using @func_copy with X.test_method_x
-#     AND with renaming args
-#     THEN inject X.test_method_x code into Y.test_method_y method
-#     AND set args of Y.test_method_y method like X.test_method_x
-#     AND rename args of X.test_method_x inside Y.test_method_y
-#     AND rename args of Y.test_method_y
-#     AND default values keep
-#     '''
-#     # Testowanie przekazywania argumentów
-#     if hasattr(instance, 'test_copy'):
-#         result = instance.test_copy(arg=sentinel.NEW_NAME)
-#         assert result == sentinel.NEW_NAME
-
-#     # Testowanie domyślnych wartości
-#     if hasattr(instance, 'test_example'):
-#         assert instance.test_copy() == sentinel.DEFAULT_ARG
+def test_copy_with_rename(
+    copy_one_arg_rename,
+    copy_many_args_rename
+):
+    '''
+    GIVEN class X with test_method_x
+    AND class Y with test_method_y
+    AND X.test_method_x can have default values
+    WHEN using @func_copy with X.test_method_x
+    AND with renaming args
+    THEN inject X.test_method_x code into Y.test_method_y method
+    AND set args of Y.test_method_y method like X.test_method_x
+    AND rename args of X.test_method_x inside Y.test_method_y
+    AND rename args of Y.test_method_y
+    AND default values keep
+    '''
+    assert copy_one_arg_rename().test_copy() == sentinel.NEW_NAME
+    assert copy_many_args_rename().test_copy() == (
+        sentinel.NEW_NAME_1,
+        sentinel.NEW_NAME_2
+    )
 
 
-# @pytest_cases.parametrize('instance', [
-#     copy_zero_arg_self,
-#     copy_one_arg_self,
-#     copy_many_args_self
-# ])
-# def test_copy_with_self_rename(instance):
-#     '''
-#     GIVEN class X with test_method_x
-#     AND class Y with test_method_y
-#     WHEN using @func_copy with X.test_method_x
-#     AND with renaming self argument
-#     THEN raise exception
-#     '''
-#     with pytest.raises(Exception) as excinfo:
-#         instance.test_copy()
+def test_copy_with_self_rename(
+    copy_zero_arg_self,
+    copy_one_arg_self,
+    copy_many_args_self
+):
+    '''
+    GIVEN class X with test_method_x
+    AND class Y with test_method_y
+    WHEN using @func_copy with X.test_method_x
+    AND with renaming self argument
+    THEN raise exception
+    '''
+    msg = 'Cannot rename to/from self arg'
 
-#     assert 'cannot rename self' in str(excinfo.value)
+    for builder in [
+        copy_zero_arg_self,
+        copy_one_arg_self,
+        copy_many_args_self
+    ]:
+        with pytest.raises(ValueError) as excinfo:
+            builder().test_copy()
+        assert msg in str(excinfo.value)
 
 
-# @pytest_cases.parametrize('X, Y', [
-#     (base_one_arg, copy_zero_arg_non_existing),
-#     (base_one_arg, copy_one_arg_non_existing),
-#     (base_many_args, copy_many_args_non_existing)
-# ])
-# def test_copy_with_non_existing_args_rename(X, Y):
-#     '''
-#     GIVEN class X with test_method_x
-#     AND class Y with test_method_y
-#     WHEN using @func_copy with X.test_method_x
-#     AND with renaming non existing arguments inside X.test_method_x
-#     THEN raise exception
-#     '''
-#     pass
+def test_copy_with_non_existing_args_rename(
+    copy_zero_arg_non_existing,
+    copy_one_arg_non_existing,
+    copy_many_args_non_existing
+):
+    '''
+    GIVEN class X with test_method_x
+    AND class Y with test_method_y
+    WHEN using @func_copy with X.test_method_x
+    AND with renaming non existing arguments inside X.test_method_x
+    THEN raise exception
+    '''
+    msg = 'Argument name does not exists'
+    for builder in [
+        copy_zero_arg_non_existing,
+        copy_one_arg_non_existing,
+        copy_many_args_non_existing
+    ]:
+        with pytest.raises(ValueError) as excinfo:
+            builder().test_copy()
+        assert msg in str(excinfo.value)

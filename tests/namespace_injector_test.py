@@ -113,6 +113,7 @@ def property_field_generators():
 #
 #
 
+
 def test_property_field_type(property_field_type_class, example_text):
     '''
     GIVEN property field exists in class
@@ -260,27 +261,3 @@ def test_generators_closed(_isinstance, _isdata, _ismethod, property_field_gener
     property_field_generators.gen_unzip.close.assert_called()
     # normal generator just be closed
     property_field_generators.gen.close.assert_called()
-
-
-def test_backup_original_func(
-        property_field_type_class,
-        example_text,
-        another_field_type_class,
-        another_text):
-    '''
-    GIVEN similar namespaces with different return values
-    WHEN using it as fixture for two different test classes
-    AND second test class copy methods from first test class
-    THEN tests return values are different
-    '''
-    @use_fixture_namespace(property_field_type_class)
-    class ExampleClass:
-        def test_method(self, example):
-            return example
-
-    @use_fixture_namespace(another_field_type_class)
-    class CopyClass:
-        test_copy = func_copy(ExampleClass.test_method)
-
-    assert ExampleClass().test_method() == example_text  # type: ignore
-    assert CopyClass().test_copy() == another_text  # type: ignore
