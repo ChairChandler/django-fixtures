@@ -6,7 +6,7 @@ activate_venv() {
 	fi
 	echo "Activating venv"
 	source .venv/bin/activate
-	pip install pytest coverage
+	pip install pytest coverage pytest-cases
 }
 
 UP="$(dirname -- "$0")/.."

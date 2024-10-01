@@ -1,4 +1,5 @@
 from .namespace_injector import *
+from .func_copy import *
 from .unzip import *
 from .state import *
 from .error import *

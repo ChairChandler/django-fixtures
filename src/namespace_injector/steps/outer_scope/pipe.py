@@ -42,7 +42,6 @@ def inject_fixtures(
         verify_fixtures(func_args_names, fix_maping)
 
         # save original function for retrieval/backup
-        # method in class has different code, but identical signature
         FunctionBackup().save(func)
 
         # create wrapper for function
