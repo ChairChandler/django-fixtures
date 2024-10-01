@@ -1,5 +1,5 @@
 from typing import Callable
-from src.error import FixtureError
+from fixture.error import FixtureError
 
 
 def verify_fixtures(func_args_names: list[str], fix_map: dict[str, Callable]):

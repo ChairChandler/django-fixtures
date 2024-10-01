@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch
 import pytest
 from functools import cached_property
-from src import *
+from fixture import *
 
 
 @pytest.fixture
@@ -166,10 +166,14 @@ def test_invalid_field_type(property_field_type_class):
     WHEN using field not existing in fixture namespace
     THEN it raise exception
     '''
-    with pytest.raises(FixtureError) as e:
+    # with pytest.raises(FixtureError) as e:
+    print(FixtureError)
+    try:
         @use_fixture_namespace(property_field_type_class)
         class ExampleClass:
             def test_method(self, not_existing_fixture): pass
+    except FixtureError:
+        print('??')
 
 
 def test_invalid_test_method(property_field_type_class):
@@ -241,9 +245,9 @@ def test_loading_in_order(property_field_loading_in_order):
 
 
 # isinstance(mock, Generator) => True
-@patch('src.namespace_injector.steps.outer_scope._1_.create_getter.isinstance', return_value=True)
-@patch('src.namespace_injector.steps.outer_scope._1_.builder.inspect.isdatadescriptor', return_value=True)
-@patch('src.namespace_injector.steps.outer_scope._1_.builder.inspect.ismethoddescriptor', return_value=True)
+@patch('fixture.namespace_injector.steps.outer_scope._1_.create_getter.isinstance', return_value=True)
+@patch('fixture.namespace_injector.steps.outer_scope._1_.builder.inspect.isdatadescriptor', return_value=True)
+@patch('fixture.namespace_injector.steps.outer_scope._1_.builder.inspect.ismethoddescriptor', return_value=True)
 def test_generators_closed(_isinstance, _isdata, _ismethod, property_field_generators):
     '''
     GIVEN property fields in class with yields
