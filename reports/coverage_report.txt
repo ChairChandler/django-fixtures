@@ -3,7 +3,7 @@ Name                                                                  Stmts   Mi
 src/__init__.py                                                           6      0   100%
 src/error.py                                                              9      2    78%   11-12
 src/func_copy/__init__.py                                                 2      0   100%
-src/func_copy/copy.py                                                     4      0   100%
+src/func_copy/copy.py                                                    29      0   100%
 src/namespace_injector/__init__.py                                        2      0   100%
 src/namespace_injector/injector.py                                        5      0   100%
 src/namespace_injector/steps/inner_scope/_1_/__init__.py                  2      0   100%
@@ -11,7 +11,7 @@ src/namespace_injector/steps/inner_scope/_1_/extractor.py                 4     
 src/namespace_injector/steps/inner_scope/_2_/__init__.py                  2      0   100%
 src/namespace_injector/steps/inner_scope/_2_/extractor.py                 3      0   100%
 src/namespace_injector/steps/inner_scope/_3_/__init__.py                  2      0   100%
-src/namespace_injector/steps/inner_scope/_3_/cleanup.py                   6      0   100%
+src/namespace_injector/steps/inner_scope/_3_/cleanup.py                   5      0   100%
 src/namespace_injector/steps/inner_scope/__init__.py                      2      0   100%
 src/namespace_injector/steps/inner_scope/pipe.py                         15      0   100%
 src/namespace_injector/steps/outer_scope/_1_/__init__.py                  3      0   100%
@@ -31,6 +31,7 @@ src/namespace_injector/steps/outer_scope/pipe.py                         21     
 src/state.py                                                             19      0   100%
 src/unzip.py                                                              4      0   100%
 tests/__init__.py                                                         0      0   100%
-tests/base_test.py                                                      156      0   100%
+tests/func_copy_test.py                                                 176      8    95%   15, 23, 129-131, 194-196, 245-247
+tests/namespace_injector_test.py                                        146      6    96%   14, 29-34
 ---------------------------------------------------------------------------------------------------
-TOTAL                                                                   324      3    99%
+TOTAL                                                                   514     17    97%

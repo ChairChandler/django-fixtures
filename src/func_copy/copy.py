@@ -35,7 +35,7 @@ def func_copy(original_func: Callable, map_args: dict[str, str] = {}):
     ```
     '''
 
-    # test self
+    # cannot replace self
     if 'self' in map_args.keys() or 'self' in map_args.values():
         raise ValueError('Cannot rename to/from self arg')
 
@@ -50,6 +50,7 @@ def func_copy(original_func: Callable, map_args: dict[str, str] = {}):
             assigned=("__module__", "__name__", "__qualname__", "__doc__")
         )
         def wrapped(*args, **kwargs):
+            # rename arguments back to the old names
             for name_old, name_new in map_args.items():
                 if name_new in kwargs:
                     value = kwargs.pop(name_new)
@@ -61,7 +62,7 @@ def func_copy(original_func: Callable, map_args: dict[str, str] = {}):
             bound_args = original_signature.bind_partial(*args, **kwargs)
             return retrieved(**bound_args.arguments)
 
-        # rename arguments names
+        # rename arguments names in signature for object injections
         new_parameters = []
         for name, param in original_signature.parameters.items():
             if name in map_args:
@@ -76,6 +77,7 @@ def func_copy(original_func: Callable, map_args: dict[str, str] = {}):
         # create new signature
         wrapped_signature = inspect.Signature(new_parameters)
 
+        # replace signature
         setattr(wrapped, '__signature__', wrapped_signature)
         return wrapped
 

@@ -50,9 +50,28 @@ class AnotherNamespace:
     def words(self):
         return ['X', 'Y']
 
+    @property
+    def something(self):
+      return 'xyz'
+
+    @property
+    def new_mock_name(self):
+      return 123
+
 @fixture.use_fixture_namespace(AnotherNamespace)
 class AnotherClass:
-    test_copy = fixture.func_copy(TestClass.test_words)
+    @fixture.func_copy(
+      TestClass.test_words
+    )
+    def test_copy_1(self): 
+      pass
+
+    @fixture.func_copy(
+      TestClass.test_something,
+      map_args={'mock': 'new_mock_name'}
+    )
+    def test_copy_2(self): 
+      pass
 ```
 
 ## Source code
