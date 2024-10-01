@@ -1,8 +1,10 @@
 ============================= test session starts ==============================
 platform linux -- Python 3.11.6, pytest-8.3.2, pluggy-1.5.0
 rootdir: /home/alewandowski/Desktop/gitea/django-fixtures
-collected 10 items
+plugins: cases-3.8.6
+collected 13 items
 
-tests/base_test.py ..........                                            [100%]
+tests/func_copy_test.py ....                                             [ 30%]
+tests/namespace_injector_test.py .........                               [100%]
 
-============================== 10 passed in 0.06s ==============================
+============================== 13 passed in 0.09s ==============================
