@@ -3,9 +3,6 @@ from typing import Callable
 import inspect
 
 from src.state import FunctionBackup
-from .steps._1_.extractor import extract_arguments
-from .steps._2_.builder import build_code_string
-from .steps._3_.compiler import compile_function
 
 
 def func_copy(original_func: Callable, map_args: dict[str, str] = {}):
@@ -37,35 +34,34 @@ def func_copy(original_func: Callable, map_args: dict[str, str] = {}):
             return X.test_something(self, z, y)
     ```
     '''
-    # we have to load objects from previous calling file
-    # because every file has different globals()
-    last_file = inspect.currentframe().f_back  # type: ignore
-    objects_to_load = (
-        last_file.f_globals,  # type: ignore
-        last_file.f_locals  # type: ignore
-    )
 
-    def wrapper(replace_function: Callable):
+    def get_function(replace_function: Callable):
         retrieved = FunctionBackup().get(original_func)
 
         # get function meta information
         signature = inspect.signature(retrieved)
 
-        args_call, args_sign = extract_arguments(signature, map_args)
-
-        code = build_code_string(
-            func_sign=replace_function,
-            args_sign=args_sign,
-            func_call=retrieved,
-            args_call=args_call
+        @wraps(
+            replace_function,
+            assigned=("__module__", "__name__", "__qualname__", "__doc__")
         )
+        def wrapped(*args, **kwargs):
+            print(args)
+            print(kwargs)
+            # assign arguments
+            bound_args = signature.bind_partial(*args, **kwargs)
 
-        new_func = compile_function(
-            code=code,
-            func_name=replace_function.__name__,
-            objects_to_load=objects_to_load
-        )
-        # keep meta attributes of original function
-        new_func = wraps(replace_function)(new_func)
-        return new_func
-    return wrapper
+            # rename arguments names
+            for old_arg, new_arg in map_args.items():
+                if old_arg in bound_args.arguments:
+                    value = bound_args.arguments.pop(old_arg)
+                    bound_args.arguments[new_arg] = value
+
+            return retrieved(**bound_args.arguments)
+
+        # get function meta information
+        signature = inspect.signature(wrapped)
+        setattr(wrapped, '__signature__', signature)
+        return wrapped
+
+    return get_function
