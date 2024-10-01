@@ -1,7 +1,7 @@
 import inspect
 from typing import Type, TypeVar
-from src.namespace_injector.steps.outer_scope._1_.create_getter import create_getter
-from src.namespace_injector.steps.outer_scope._1_.getmembers_unsorted import getmembers_unsorted
+from fixture.namespace_injector.steps.outer_scope._1_.create_getter import create_getter
+from fixture.namespace_injector.steps.outer_scope._1_.getmembers_unsorted import getmembers_unsorted
 
 T = TypeVar('T')
 

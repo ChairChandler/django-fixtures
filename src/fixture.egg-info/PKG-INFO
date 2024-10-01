@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: fixture
+Version: 1.0.0
+Summary: Allows to inject class-based fixtures to any test classes.
+Author: Adam Lewandowski
+Author-email: adam_lewandowski_1998@outlook.com
+Classifier: Private :: Do Not Upload
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Framework :: Django :: 5.1
+Classifier: Framework :: Pytest
+Classifier: Programming Language :: Python :: 3.11
+Classifier: License :: Free for non-commercial use
+Classifier: Topic :: Software Development :: Testing
+Classifier: Topic :: Utilities

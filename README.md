@@ -16,7 +16,7 @@ To inject fixtures in a test class, methods in a test class must starts with a `
 
 `@unzip` decorator allows to load generator/mock directly without calling `next(mock)` on it. All generators (marked with **unzip** or without) are automatically closed after test is done.
 
-Tests can be copy using `func_copy` function.
+Tests can be copy using `@func_copy` decorator with renaming arguments using **map_args**.
 
 Example:
 
@@ -60,18 +60,14 @@ class AnotherNamespace:
 
 @fixture.use_fixture_namespace(AnotherNamespace)
 class AnotherClass:
-    @fixture.func_copy(
-      TestClass.test_words
-    )
-    def test_copy_1(self): 
-      pass
+    @fixture.func_copy(TestClass.test_words)
+    def test_copy_1(): ...
 
     @fixture.func_copy(
       TestClass.test_something,
       map_args={'mock': 'new_mock_name'}
     )
-    def test_copy_2(self): 
-      pass
+    def test_copy_2(): ...
 ```
 
 ## Source code

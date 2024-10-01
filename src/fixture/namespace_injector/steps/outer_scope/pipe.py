@@ -7,9 +7,9 @@ from ._3_ import extract_args_names
 from ._4_ import filter_fixtures
 from ._5_ import verify_fixtures
 # inner scope
-from src.namespace_injector.steps.inner_scope import create_wrapper
+from fixture.namespace_injector.steps.inner_scope import create_wrapper
 
-from src.state import FunctionBackup
+from fixture.state import FunctionBackup
 
 T = TypeVar('T')
 

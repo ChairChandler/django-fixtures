@@ -1,4 +1,4 @@
-from src.namespace_injector.steps.outer_scope._1_.create_getter import GetterInfo
+from fixture.namespace_injector.steps.outer_scope._1_.create_getter import GetterInfo
 
 
 def cleanup_generators(prepared: dict[str, GetterInfo]):

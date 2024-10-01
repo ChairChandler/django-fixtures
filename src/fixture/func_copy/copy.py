@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Callable
 import inspect
 
-from src.state import FunctionBackup
+from fixture.state import FunctionBackup
 
 
 def func_copy(original_func: Callable, map_args: dict[str, str] = {}):

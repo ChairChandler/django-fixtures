@@ -1,6 +1,6 @@
 from unittest.mock import sentinel
 import pytest
-from src import *
+from src.fixture import *
 
 
 @pytest.fixture

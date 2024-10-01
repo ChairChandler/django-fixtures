@@ -1,10 +1,11 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 setup(
-    name='fixtures',
+    name='fixture',
     version='1.0.0',
     description='Allows to inject class-based fixtures to any test classes.',
-    package_dir={'fixture': 'src'},
+    package_dir={'': 'src'},
+    packages=find_packages(where='src'),
     author='Adam Lewandowski',
     author_email='adam_lewandowski_1998@outlook.com',
     classifiers=[
