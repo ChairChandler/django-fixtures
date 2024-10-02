@@ -265,3 +265,30 @@ def test_generators_closed(_isinstance, _isdata, _ismethod, property_field_gener
     property_field_generators.gen_unzip.close.assert_called()
     # normal generator just be closed
     property_field_generators.gen.close.assert_called()
+
+# isinstance(mock, Generator) => True
+
+
+@patch('fixture.namespace_injector.steps.outer_scope._1_.create_getter.isinstance', return_value=True)
+@patch('fixture.namespace_injector.steps.outer_scope._1_.builder.inspect.isdatadescriptor', return_value=True)
+@patch('fixture.namespace_injector.steps.outer_scope._1_.builder.inspect.ismethoddescriptor', return_value=True)
+def test_broken_test_generators_closed(_isinstance, _isdata, _ismethod, property_field_generators):
+    '''
+    GIVEN property fields in class with yields
+    WHEN injecting fields
+    AND exceptions raised inside tests
+    THEN raise exception
+    AND generators closed after test 
+    '''
+    @use_fixture_namespace(property_field_generators)
+    class ExampleClass:
+        def test_1(self, example_gen_unzip, example_gen):
+            raise Exception()
+
+    with pytest.raises(Exception):
+        ExampleClass().test_1()  # type: ignore
+    # unzip must be called once and then closed
+    property_field_generators.gen_unzip.__next__.assert_called()
+    property_field_generators.gen_unzip.close.assert_called()
+    # normal generator just be closed
+    property_field_generators.gen.close.assert_called()

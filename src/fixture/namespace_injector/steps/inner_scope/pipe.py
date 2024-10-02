@@ -19,10 +19,12 @@ def create_wrapper(func: Callable, fix_maping: dict):
         only_values = extract_values(prepared)
         # fixtures has lower priority than default test arguments
         only_values.update(kwargs)
-        # run function with fixtures
-        ret_val = func(*args, **only_values)
-        # cleanup generators (important for memory leakage)
-        cleanup_generators(prepared)
-        return ret_val
+        try:
+            # run function with fixtures
+            ret_val = func(*args, **only_values)
+            return ret_val
+        finally:
+            # cleanup generators (important for memory leakage)
+            cleanup_generators(prepared)
 
     return injector
