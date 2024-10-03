@@ -16,7 +16,7 @@ To inject fixtures in a test class, methods in a test class must starts with a `
 
 `@unzip` decorator allows to load generator/mock directly without calling `next(mock)` on it. All generators (marked with **unzip** or without) are automatically closed after test is done.
 
-Tests can be copy using `@func_copy` decorator with renaming arguments using **map_args**.
+Tests can be copy using `@func_copy` decorator with renaming arguments using **map_args**. Copy cannot be done in the same namespace.
 
 Example:
 
