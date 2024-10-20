@@ -9,12 +9,11 @@ setup(
     author='Adam Lewandowski',
     author_email='adam_lewandowski_1998@outlook.com',
     classifiers=[
-        'Private :: Do Not Upload',
         'Development Status :: 5 - Production/Stable',
         'Framework :: Django :: 5.1',
         'Framework :: Pytest',
         'Programming Language :: Python :: 3.11',
-        'License :: Free for non-commercial use',
+        'License :: OSI Approved :: MIT License',
         'Topic :: Software Development :: Testing',
         'Topic :: Utilities'
     ]
