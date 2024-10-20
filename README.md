@@ -1,11 +1,5 @@
 # Description
 
-<style>
-  red {
-    color: red;
-  }
-</style>
-
 ## Overview
 
 Injects fixture into methods arguments from class properties a.k.a namespace.
